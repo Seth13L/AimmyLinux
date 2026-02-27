@@ -72,6 +72,9 @@ dotnet run -c Release -- --save-config
 - Primary config is typed JSON (`AimmyConfig`) in `aimmylinux.json`.
 - Legacy Windows-style `.cfg` files are supported via migration at load time.
 - Writes always use typed JSON.
+- Multi-monitor and DPI settings are in `Capture`:
+  - `DisplayOffsetX` / `DisplayOffsetY`: top-left origin of the target display in the X11 virtual desktop.
+  - `DpiScaleX` / `DpiScaleY`: scaling factors applied to capture geometry, FOV sizing, and overlay projection.
 
 ## Capability Flags
 

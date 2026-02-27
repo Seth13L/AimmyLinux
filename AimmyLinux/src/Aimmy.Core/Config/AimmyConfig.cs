@@ -29,6 +29,10 @@ public sealed class AimmyConfig
         Capture.Height = Math.Clamp(Capture.Height, 64, 2048);
         Capture.DisplayWidth = Math.Clamp(Capture.DisplayWidth, 640, 8192);
         Capture.DisplayHeight = Math.Clamp(Capture.DisplayHeight, 480, 8192);
+        Capture.DisplayOffsetX = Math.Clamp(Capture.DisplayOffsetX, -16384, 16384);
+        Capture.DisplayOffsetY = Math.Clamp(Capture.DisplayOffsetY, -16384, 16384);
+        Capture.DpiScaleX = Math.Clamp(Capture.DpiScaleX, 0.25, 4.0);
+        Capture.DpiScaleY = Math.Clamp(Capture.DpiScaleY, 0.25, 4.0);
 
         Aim.MouseSensitivity = Math.Clamp(Aim.MouseSensitivity, 0.01, 1.0);
         Aim.MouseJitter = Math.Clamp(Aim.MouseJitter, 0, 20);
@@ -69,6 +73,10 @@ public sealed class CaptureSettings
     public int Height { get; set; } = 640;
     public int DisplayWidth { get; set; } = 1920;
     public int DisplayHeight { get; set; } = 1080;
+    public int DisplayOffsetX { get; set; }
+    public int DisplayOffsetY { get; set; }
+    public double DpiScaleX { get; set; } = 1.0;
+    public double DpiScaleY { get; set; } = 1.0;
 }
 
 public sealed class InputSettings

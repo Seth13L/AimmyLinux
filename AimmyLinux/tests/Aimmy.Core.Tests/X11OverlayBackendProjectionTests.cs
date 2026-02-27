@@ -41,4 +41,26 @@ public sealed class X11OverlayBackendProjectionTests
         Assert.InRange(rect.X2, 1, 79);
         Assert.InRange(rect.Y2, 1, 59);
     }
+
+    [Fact]
+    public void ProjectDetectionToScreen_AppliesDpiScaleAndDisplayOrigin()
+    {
+        var detection = new Detection(100, 120, 40, 20, 0.9f, 0, "enemy");
+
+        var rect = X11OverlayBackend.ProjectDetectionToScreen(
+            detection,
+            captureOffsetX: 3120,
+            captureOffsetY: 600,
+            displayWidth: 3200,
+            displayHeight: 2160,
+            dpiScaleX: 1.25f,
+            dpiScaleY: 1.5f,
+            displayOriginX: 1920,
+            displayOriginY: 0);
+
+        Assert.Equal(3220, rect.X1);
+        Assert.Equal(765, rect.Y1);
+        Assert.Equal(3270, rect.X2);
+        Assert.Equal(795, rect.Y2);
+    }
 }

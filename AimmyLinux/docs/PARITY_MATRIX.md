@@ -22,8 +22,9 @@
 |---|---|---|---|
 | DirectX desktop duplication | Yes | No | Excluded v1 |
 | GDI capture fallback | Yes | No | Excluded v1 |
-| X11 native capture backend | N/A | Scaffold interface | Planned |
+| X11 native capture backend | N/A | Yes | Done |
 | External capture backends (grim/maim/import/scrot) | N/A | Yes | Done |
+| Display selection + DPI scaling | Yes | Yes (display offsets + scaling factors) | Done |
 | uinput-first input policy | N/A | Yes (uinput via ydotool path) | In Progress |
 | xdotool fallback | N/A | Yes | Done |
 | ydotool fallback | N/A | Yes | Done |
@@ -44,8 +45,8 @@
 ## Overlay / UI / Hotkeys
 | Area | Windows | Linux v1 | Status |
 |---|---|---|---|
-| FOV overlay | Yes | Interface + noop backend | Planned |
-| ESP overlay | Yes | Interface + noop backend | Planned |
+| FOV overlay | Yes | Yes (X11 tkinter overlay) | Done |
+| ESP overlay | Yes | Yes (boxes/confidence/tracers) | Done |
 | Global hotkey capture UX | Yes | Fallback backend | In Progress |
 | Full desktop GUI | WPF | Avalonia scaffold | In Progress |
 

@@ -12,7 +12,11 @@
     "Width": 640,
     "Height": 640,
     "DisplayWidth": 1920,
-    "DisplayHeight": 1080
+    "DisplayHeight": 1080,
+    "DisplayOffsetX": 0,
+    "DisplayOffsetY": 0,
+    "DpiScaleX": 1.0,
+    "DpiScaleY": 1.0
   },
   "Input": {
     "PreferredMethod": "UInput",

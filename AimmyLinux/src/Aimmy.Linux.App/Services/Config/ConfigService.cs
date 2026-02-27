@@ -114,6 +114,10 @@ public sealed class ConfigService
             config.Capture.Height = old.CaptureHeight;
             config.Capture.DisplayWidth = old.DisplayWidth;
             config.Capture.DisplayHeight = old.DisplayHeight;
+            config.Capture.DisplayOffsetX = old.DisplayOffsetX;
+            config.Capture.DisplayOffsetY = old.DisplayOffsetY;
+            config.Capture.DpiScaleX = old.DpiScaleX;
+            config.Capture.DpiScaleY = old.DpiScaleY;
             config.Model.ConfidenceThreshold = old.ConfidenceThreshold;
             config.Aim.MouseSensitivity = old.MouseSensitivity;
             config.Aim.MaxDeltaPerAxis = old.MaxDeltaPerAxis;
@@ -144,6 +148,10 @@ public sealed class ConfigService
         public int CaptureHeight { get; set; } = 640;
         public int DisplayWidth { get; set; } = 1920;
         public int DisplayHeight { get; set; } = 1080;
+        public int DisplayOffsetX { get; set; }
+        public int DisplayOffsetY { get; set; }
+        public double DpiScaleX { get; set; } = 1.0;
+        public double DpiScaleY { get; set; } = 1.0;
         public float ConfidenceThreshold { get; set; } = 0.45f;
         public double MouseSensitivity { get; set; } = 0.8;
         public int MaxDeltaPerAxis { get; set; } = 150;

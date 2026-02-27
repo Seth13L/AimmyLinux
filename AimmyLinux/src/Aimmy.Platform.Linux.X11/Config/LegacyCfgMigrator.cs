@@ -46,6 +46,12 @@ public sealed class LegacyCfgMigrator : IConfigMigrator
 
             migratedConfig.Capture.ExternalBackendPreference = GetString(root, "Preferred Capture Backend", migratedConfig.Capture.ExternalBackendPreference);
             migratedConfig.Capture.Method = ParseCaptureMethod(GetString(root, "Screen Capture Method", "GDI+"));
+            migratedConfig.Capture.DisplayWidth = GetInt(root, "Display Width", migratedConfig.Capture.DisplayWidth);
+            migratedConfig.Capture.DisplayHeight = GetInt(root, "Display Height", migratedConfig.Capture.DisplayHeight);
+            migratedConfig.Capture.DisplayOffsetX = GetInt(root, "Display Offset X", migratedConfig.Capture.DisplayOffsetX);
+            migratedConfig.Capture.DisplayOffsetY = GetInt(root, "Display Offset Y", migratedConfig.Capture.DisplayOffsetY);
+            migratedConfig.Capture.DpiScaleX = GetDouble(root, "DPI Scale X", migratedConfig.Capture.DpiScaleX);
+            migratedConfig.Capture.DpiScaleY = GetDouble(root, "DPI Scale Y", migratedConfig.Capture.DpiScaleY);
 
             migratedConfig.Input.PreferredMethod = ParseInputMethod(GetString(root, "Mouse Movement Method", "Mouse Event"));
             migratedConfig.Input.AimKeybind = GetString(root, "Aim Keybind", migratedConfig.Input.AimKeybind);

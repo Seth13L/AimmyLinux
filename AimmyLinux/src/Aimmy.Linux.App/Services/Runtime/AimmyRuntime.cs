@@ -1,4 +1,5 @@
 ﻿using Aimmy.Core.Capabilities;
+using Aimmy.Core.Capture;
 using Aimmy.Core.Config;
 using Aimmy.Core.Diagnostics;
 using Aimmy.Core.Models;
@@ -24,6 +25,7 @@ public sealed class AimmyRuntime
     private readonly ITargetPredictor _predictor;
     private readonly RuntimeDiagnostics _diagnostics = new();
     private readonly RuntimeAssertionThresholds _runtimeThresholds;
+    private readonly CaptureGeometry _captureGeometry;
 
     private Detection? _stickyTarget;
     private DateTime _lastTriggerTime = DateTime.MinValue;
@@ -47,6 +49,7 @@ public sealed class AimmyRuntime
         _hotkeys = hotkeys;
         _overlay = overlay;
         _predictor = predictor;
+        _captureGeometry = CaptureGeometryResolver.Resolve(config.Capture);
         _runtimeThresholds = new RuntimeAssertionThresholds(
             config.Runtime.DiagnosticsMinimumFps,
             config.Runtime.DiagnosticsMaxCaptureP95Ms,
@@ -61,7 +64,8 @@ public sealed class AimmyRuntime
         if (_config.Fov.Enabled && _config.Fov.ShowFov)
         {
             _activeFovSize = Math.Max(1, _config.Fov.Size);
-            await _overlay.ShowFovAsync(_activeFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
+            var scaledInitialFov = Math.Max(1, (int)Math.Round(_activeFovSize * _captureGeometry.FovScale, MidpointRounding.AwayFromZero));
+            await _overlay.ShowFovAsync(scaledInitialFov, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -69,10 +73,12 @@ public sealed class AimmyRuntime
         }
 
         var region = CaptureRegion.Centered(
-            _config.Capture.DisplayWidth,
-            _config.Capture.DisplayHeight,
-            _config.Capture.Width,
-            _config.Capture.Height);
+            _captureGeometry.DisplayWidth,
+            _captureGeometry.DisplayHeight,
+            _captureGeometry.CaptureWidth,
+            _captureGeometry.CaptureHeight,
+            _captureGeometry.DisplayOriginX,
+            _captureGeometry.DisplayOriginY);
 
         Console.WriteLine("Aimmy Linux runtime started.");
         Console.WriteLine($"Model: {_config.Model.ModelPath}");
@@ -86,6 +92,11 @@ public sealed class AimmyRuntime
         {
             Console.WriteLine($"Capability[{capability.Name}]: {capability.State} (degraded={capability.IsDegraded}) {capability.Message}");
         }
+
+        Console.WriteLine(
+            $"Capture geometry: display={_captureGeometry.DisplayWidth}x{_captureGeometry.DisplayHeight}@({_captureGeometry.DisplayOriginX},{_captureGeometry.DisplayOriginY}) " +
+            $"capture={_captureGeometry.CaptureWidth}x{_captureGeometry.CaptureHeight}@({_captureGeometry.CaptureX},{_captureGeometry.CaptureY}) " +
+            $"dpi={_captureGeometry.DpiScaleX:F2}x{_captureGeometry.DpiScaleY:F2}");
 
         var frameInterval = TimeSpan.FromMilliseconds(1000d / Math.Max(1, _config.Runtime.Fps));
         var loopStopwatch = new Stopwatch();
@@ -155,10 +166,11 @@ public sealed class AimmyRuntime
         _diagnostics.AddInferenceMs(inferenceStopwatch.Elapsed.TotalMilliseconds);
 
         var resolvedFovSize = DynamicFovResolver.Resolve(_config, _hotkeys.IsPressed("Dynamic FOV Keybind"));
+        var scaledFovSize = Math.Max(1, (int)Math.Round(resolvedFovSize * _captureGeometry.FovScale, MidpointRounding.AwayFromZero));
         if (_config.Fov.Enabled && _config.Fov.ShowFov && resolvedFovSize != _activeFovSize)
         {
             _activeFovSize = resolvedFovSize;
-            await _overlay.ShowFovAsync(_activeFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
+            await _overlay.ShowFovAsync(scaledFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
         }
 
         var targetPoint = TargetPointResolver.Resolve(frame.Width, frame.Height, _config);
@@ -169,7 +181,7 @@ public sealed class AimmyRuntime
             _config,
             frame.Width,
             frame.Height,
-            resolvedFovSize);
+            scaledFovSize);
         var selected = StickyAimTracker.Resolve(_stickyTarget, candidate, detections, _config);
         _stickyTarget = selected;
 

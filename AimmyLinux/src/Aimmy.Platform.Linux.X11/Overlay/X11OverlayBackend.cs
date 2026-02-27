@@ -1,4 +1,5 @@
 using Aimmy.Core.Config;
+using Aimmy.Core.Capture;
 using Aimmy.Core.Models;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Linux.X11.Util;
@@ -23,8 +24,12 @@ public sealed class X11OverlayBackend : IOverlayBackend
 
     private readonly int _captureOffsetX;
     private readonly int _captureOffsetY;
+    private readonly int _displayOriginX;
+    private readonly int _displayOriginY;
     private readonly int _displayWidth;
     private readonly int _displayHeight;
+    private readonly float _dpiScaleX;
+    private readonly float _dpiScaleY;
 
     private readonly string _stateFilePath;
     private OverlayState _state;
@@ -40,10 +45,15 @@ public sealed class X11OverlayBackend : IOverlayBackend
         _commandRunner = commandRunner ?? ProcessRunner.Instance;
         _environmentVariableReader = environmentVariableReader ?? Environment.GetEnvironmentVariable;
 
-        _displayWidth = Math.Max(1, config.Capture.DisplayWidth);
-        _displayHeight = Math.Max(1, config.Capture.DisplayHeight);
-        _captureOffsetX = Math.Max(0, (_displayWidth - Math.Max(1, config.Capture.Width)) / 2);
-        _captureOffsetY = Math.Max(0, (_displayHeight - Math.Max(1, config.Capture.Height)) / 2);
+        var geometry = CaptureGeometryResolver.Resolve(config.Capture);
+        _displayOriginX = geometry.DisplayOriginX;
+        _displayOriginY = geometry.DisplayOriginY;
+        _displayWidth = geometry.DisplayWidth;
+        _displayHeight = geometry.DisplayHeight;
+        _captureOffsetX = geometry.CaptureX;
+        _captureOffsetY = geometry.CaptureY;
+        _dpiScaleX = geometry.DpiScaleX;
+        _dpiScaleY = geometry.DpiScaleY;
 
         _stateFilePath = Path.Combine(Path.GetTempPath(), $"aimmylinux_overlay_state_{Guid.NewGuid():N}.json");
         _state = OverlayState.CreateInitial(config);
@@ -181,21 +191,30 @@ public sealed class X11OverlayBackend : IOverlayBackend
         int captureOffsetX,
         int captureOffsetY,
         int displayWidth,
-        int displayHeight)
+        int displayHeight,
+        float dpiScaleX = 1f,
+        float dpiScaleY = 1f,
+        int displayOriginX = 0,
+        int displayOriginY = 0)
     {
-        var x1 = Clamp(detection.Left + captureOffsetX, 0, displayWidth - 1);
-        var y1 = Clamp(detection.Top + captureOffsetY, 0, displayHeight - 1);
-        var x2 = Clamp(detection.Right + captureOffsetX, 0, displayWidth - 1);
-        var y2 = Clamp(detection.Bottom + captureOffsetY, 0, displayHeight - 1);
+        var minX = displayOriginX;
+        var minY = displayOriginY;
+        var maxX = displayOriginX + Math.Max(1, displayWidth) - 1;
+        var maxY = displayOriginY + Math.Max(1, displayHeight) - 1;
+
+        var x1 = Clamp((detection.Left * dpiScaleX) + captureOffsetX, minX, maxX);
+        var y1 = Clamp((detection.Top * dpiScaleY) + captureOffsetY, minY, maxY);
+        var x2 = Clamp((detection.Right * dpiScaleX) + captureOffsetX, minX, maxX);
+        var y2 = Clamp((detection.Bottom * dpiScaleY) + captureOffsetY, minY, maxY);
 
         if (x2 <= x1)
         {
-            x2 = Math.Min(displayWidth - 1, x1 + 1);
+            x2 = Math.Min(maxX, x1 + 1);
         }
 
         if (y2 <= y1)
         {
-            y2 = Math.Min(displayHeight - 1, y1 + 1);
+            y2 = Math.Min(maxY, y1 + 1);
         }
 
         return new OverlayDetectionRect(x1, y1, x2, y2);
@@ -255,6 +274,10 @@ public sealed class X11OverlayBackend : IOverlayBackend
 
         startInfo.Environment["AIMMY_OVERLAY_STATE_PATH"] = _stateFilePath;
         startInfo.Environment["AIMMY_OVERLAY_BG"] = TransparentBackgroundColor;
+        startInfo.Environment["AIMMY_DISPLAY_ORIGIN_X"] = _displayOriginX.ToString(CultureInfo.InvariantCulture);
+        startInfo.Environment["AIMMY_DISPLAY_ORIGIN_Y"] = _displayOriginY.ToString(CultureInfo.InvariantCulture);
+        startInfo.Environment["AIMMY_DISPLAY_WIDTH"] = _displayWidth.ToString(CultureInfo.InvariantCulture);
+        startInfo.Environment["AIMMY_DISPLAY_HEIGHT"] = _displayHeight.ToString(CultureInfo.InvariantCulture);
 
         var process = new Process
         {
@@ -305,6 +328,12 @@ public sealed class X11OverlayBackend : IOverlayBackend
         script.AppendLine();
         script.AppendLine("screen_w = root.winfo_screenwidth()");
         script.AppendLine("screen_h = root.winfo_screenheight()");
+        script.AppendLine("display_origin_x = int(os.environ.get('AIMMY_DISPLAY_ORIGIN_X', '0'))");
+        script.AppendLine("display_origin_y = int(os.environ.get('AIMMY_DISPLAY_ORIGIN_Y', '0'))");
+        script.AppendLine("display_w = max(1, int(os.environ.get('AIMMY_DISPLAY_WIDTH', str(screen_w))))");
+        script.AppendLine("display_h = max(1, int(os.environ.get('AIMMY_DISPLAY_HEIGHT', str(screen_h))))");
+        script.AppendLine("display_center_x = display_origin_x + (display_w / 2.0)");
+        script.AppendLine("display_center_y = display_origin_y + (display_h / 2.0)");
         script.AppendLine("root.geometry(f'{screen_w}x{screen_h}+0+0')");
         script.AppendLine();
         script.AppendLine("canvas = tk.Canvas(root, width=screen_w, height=screen_h, bg=bg, highlightthickness=0)");
@@ -319,14 +348,14 @@ public sealed class X11OverlayBackend : IOverlayBackend
         script.AppendLine("def tracer_origin(position):");
         script.AppendLine("    pos = str(position or 'bottom').lower()");
         script.AppendLine("    if pos == 'top':");
-        script.AppendLine("        return (screen_w / 2.0, 0.0)");
+        script.AppendLine("        return (display_center_x, float(display_origin_y))");
         script.AppendLine("    if pos == 'left':");
-        script.AppendLine("        return (0.0, screen_h / 2.0)");
+        script.AppendLine("        return (float(display_origin_x), display_center_y)");
         script.AppendLine("    if pos == 'right':");
-        script.AppendLine("        return (float(screen_w), screen_h / 2.0)");
+        script.AppendLine("        return (float(display_origin_x + display_w), display_center_y)");
         script.AppendLine("    if pos == 'center':");
-        script.AppendLine("        return (screen_w / 2.0, screen_h / 2.0)");
-        script.AppendLine("    return (screen_w / 2.0, float(screen_h))");
+        script.AppendLine("        return (display_center_x, display_center_y)");
+        script.AppendLine("    return (display_center_x, float(display_origin_y + display_h))");
         script.AppendLine();
         script.AppendLine("def render(state):");
         script.AppendLine("    canvas.delete('all')");
@@ -342,8 +371,8 @@ public sealed class X11OverlayBackend : IOverlayBackend
         script.AppendLine("        if fov_size > 0:");
         script.AppendLine("            color = norm_color(state.get('FovColor'), '#ff0000')");
         script.AppendLine("            style = str(state.get('FovStyle', 'circle')).lower()");
-        script.AppendLine("            cx = screen_w / 2.0");
-        script.AppendLine("            cy = screen_h / 2.0");
+        script.AppendLine("            cx = display_center_x");
+        script.AppendLine("            cy = display_center_y");
         script.AppendLine("            half = fov_size / 2.0");
         script.AppendLine("            x1 = cx - half");
         script.AppendLine("            y1 = cy - half");
@@ -419,7 +448,11 @@ public sealed class X11OverlayBackend : IOverlayBackend
             _captureOffsetX,
             _captureOffsetY,
             _displayWidth,
-            _displayHeight);
+            _displayHeight,
+            _dpiScaleX,
+            _dpiScaleY,
+            _displayOriginX,
+            _displayOriginY);
 
         return new OverlayDetection(
             projected.X1,

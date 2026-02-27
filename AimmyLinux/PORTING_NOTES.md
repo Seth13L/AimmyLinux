@@ -29,6 +29,7 @@ This commit establishes the migration baseline needed for phased feature parity.
   - WiseTheFox
 - Runtime diagnostics with FPS and p50/p95 latencies.
 - Linux capability probe with explicit feature state reporting.
+- Multi-monitor display offset + DPI-aware capture/overlay geometry.
 - Linux backend factories:
   - capture (external tool fallback)
   - input (`uinput`/`ydotool`, `xdotool`, noop)
@@ -42,7 +43,7 @@ This commit establishes the migration baseline needed for phased feature parity.
 
 ## Still Pending for Full v1 Parity
 
-- Multi-monitor display selection and DPI behavior parity.
+- Display auto-discovery/selection UI wiring in Avalonia.
 - Extended data-collection/auto-label parity behavior.
 - Full Avalonia parity UI implementation.
 - End-to-end validation against Ubuntu/Fedora hardware matrix.
