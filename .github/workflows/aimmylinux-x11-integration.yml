@@ -2,7 +2,7 @@ name: AimmyLinux X11 Integration
 
 on:
   push:
-    branches: ["Aimmy-V2"]
+    branches: ["main", "Aimmy-V2"]
     paths:
       - "AimmyLinux/**"
       - ".github/workflows/aimmylinux-x11-integration.yml"
