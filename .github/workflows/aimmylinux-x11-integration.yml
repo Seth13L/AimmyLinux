@@ -1,0 +1,140 @@
+name: AimmyLinux X11 Integration
+
+on:
+  push:
+    branches: ["Aimmy-V2"]
+    paths:
+      - "AimmyLinux/**"
+      - ".github/workflows/aimmylinux-x11-integration.yml"
+  pull_request:
+    paths:
+      - "AimmyLinux/**"
+      - ".github/workflows/aimmylinux-x11-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-x11:
+    name: Ubuntu X11
+    runs-on: ubuntu-22.04
+    env:
+      TEST_RESULTS_DIR: ${{ github.workspace }}/artifacts/test-results/ubuntu-x11
+      XVFB_LOG: /tmp/xvfb-ubuntu.log
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb \
+            python3 \
+            python3-tk \
+            libx11-6 \
+            x11-utils
+
+      - name: Restore and build
+        run: |
+          dotnet restore AimmyLinux/AimmyLinux.sln
+          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore
+
+      - name: Run tests under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$TEST_RESULTS_DIR"
+          Xvfb :99 -screen 0 1920x1080x24 >"$XVFB_LOG" 2>&1 &
+          XVFB_PID=$!
+          trap 'kill $XVFB_PID || true' EXIT
+          export DISPLAY=:99
+          export RUN_LINUX_X11_INTEGRATION=1
+          dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
+            -c Release \
+            --no-build \
+            --results-directory "$TEST_RESULTS_DIR" \
+            --logger "trx;LogFileName=ubuntu-x11.trx" \
+            | tee "$TEST_RESULTS_DIR/dotnet-test.log"
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-x11-test-artifacts
+          path: |
+            ${{ env.TEST_RESULTS_DIR }}
+            ${{ env.XVFB_LOG }}
+          if-no-files-found: warn
+
+  fedora-x11:
+    name: Fedora X11
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:41
+    env:
+      TEST_RESULTS_DIR: ${{ github.workspace }}/artifacts/test-results/fedora-x11
+      XVFB_LOG: /tmp/xvfb-fedora.log
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          dnf -y update
+          dnf -y install \
+            ca-certificates \
+            curl \
+            findutils \
+            git \
+            libX11 \
+            procps-ng \
+            python3 \
+            python3-tkinter \
+            which \
+            xorg-x11-server-Xvfb
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore and build
+        run: |
+          dotnet restore AimmyLinux/AimmyLinux.sln
+          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore
+
+      - name: Run tests under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$TEST_RESULTS_DIR"
+          Xvfb :99 -screen 0 1920x1080x24 >"$XVFB_LOG" 2>&1 &
+          XVFB_PID=$!
+          trap 'kill $XVFB_PID || true' EXIT
+          export DISPLAY=:99
+          export RUN_LINUX_X11_INTEGRATION=1
+          dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
+            -c Release \
+            --no-build \
+            --results-directory "$TEST_RESULTS_DIR" \
+            --logger "trx;LogFileName=fedora-x11.trx" \
+            | tee "$TEST_RESULTS_DIR/dotnet-test.log"
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-x11-test-artifacts
+          path: |
+            ${{ env.TEST_RESULTS_DIR }}
+            ${{ env.XVFB_LOG }}
+          if-no-files-found: warn

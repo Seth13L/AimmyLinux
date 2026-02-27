@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aimmy.Core\Aimmy.Core.csproj" />
+    <ProjectReference Include="..\Aimmy.Platform.Abstractions\Aimmy.Platform.Abstractions.csproj" />
+    <PackageReference Include="Avalonia" Version="11.3.4" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src\Aimmy.Core\Aimmy.Core.csproj" />
+    <ProjectReference Include="src\Aimmy.Platform.Abstractions\Aimmy.Platform.Abstractions.csproj" />
+    <ProjectReference Include="src\Aimmy.Platform.Linux.X11\Aimmy.Platform.Linux.X11.csproj" />
+    <ProjectReference Include="src\Aimmy.Inference.OnnxRuntime\Aimmy.Inference.OnnxRuntime.csproj" />
+    <ProjectReference Include="src\Aimmy.UI.Avalonia\Aimmy.UI.Avalonia.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="src\Aimmy.Linux.App\**\*.cs" />
+    <None Include="aimmylinux.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

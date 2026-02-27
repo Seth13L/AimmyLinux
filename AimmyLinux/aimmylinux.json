@@ -1,0 +1,105 @@
+﻿{
+  "ConfigVersion": "3.0",
+  "Model": {
+    "ModelPath": "models/Universal_Hamsta_v4.onnx",
+    "ConfidenceThreshold": 0.45,
+    "TargetClass": "Best Confidence",
+    "ImageSize": 640
+  },
+  "Capture": {
+    "Method": "X11Fallback",
+    "ExternalBackendPreference": "auto",
+    "Width": 640,
+    "Height": 640,
+    "DisplayWidth": 1920,
+    "DisplayHeight": 1080
+  },
+  "Input": {
+    "PreferredMethod": "UInput",
+    "AimKeybind": "Right",
+    "SecondaryAimKeybind": "LeftAlt",
+    "DynamicFovKeybind": "Left",
+    "EmergencyStopKeybind": "Delete",
+    "ModelSwitchKeybind": "Backslash"
+  },
+  "Aim": {
+    "Enabled": true,
+    "ConstantTracking": false,
+    "StickyAimEnabled": false,
+    "StickyAimThreshold": 50,
+    "DynamicFovEnabled": false,
+    "ThirdPersonSupport": false,
+    "XAxisPercentageAdjustment": false,
+    "YAxisPercentageAdjustment": false,
+    "MouseSensitivity": 0.8,
+    "MouseJitter": 4,
+    "MaxDeltaPerAxis": 150,
+    "XOffset": 0,
+    "YOffset": 0,
+    "XOffsetPercent": 50,
+    "YOffsetPercent": 50,
+    "DetectionAreaType": "ClosestToCenterScreen",
+    "AimingBoundariesAlignment": "Center",
+    "MovementPath": "CubicBezier"
+  },
+  "Prediction": {
+    "Enabled": false,
+    "Strategy": "Kalman",
+    "EmaSmoothingEnabled": false,
+    "EmaSmoothingAmount": 0.5,
+    "KalmanLeadTime": 0.1,
+    "WiseTheFoxLeadTime": 0.15,
+    "ShalloeLeadMultiplier": 3.0
+  },
+  "Trigger": {
+    "Enabled": false,
+    "SprayMode": false,
+    "CursorCheck": false,
+    "AutoTriggerDelaySeconds": 0.1
+  },
+  "Fov": {
+    "Enabled": false,
+    "ShowFov": true,
+    "Size": 640,
+    "DynamicSize": 200,
+    "Style": "Circle",
+    "Color": "#FF8080FF"
+  },
+  "Overlay": {
+    "ShowDetectedPlayer": false,
+    "ShowConfidence": false,
+    "ShowTracers": false,
+    "TracerPosition": "Bottom",
+    "Opacity": 1.0
+  },
+  "Runtime": {
+    "Fps": 120,
+    "DryRun": true,
+    "DebugMode": false,
+    "GpuMode": "Auto",
+    "EnableDiagnosticsAssertions": true,
+    "DiagnosticsMinimumFps": 60,
+    "DiagnosticsMaxCaptureP95Ms": 20,
+    "DiagnosticsMaxInferenceP95Ms": 25,
+    "DiagnosticsMaxLoopP95Ms": 35
+  },
+  "DataCollection": {
+    "CollectDataWhilePlaying": false,
+    "AutoLabelData": false,
+    "ImagesDirectory": "bin/images",
+    "LabelsDirectory": "bin/labels"
+  },
+  "Store": {
+    "Enabled": true,
+    "ModelsApiUrl": "https://api.github.com/repos/Babyhamsta/Aimmy/contents/models",
+    "ConfigsApiUrl": "https://api.github.com/repos/Babyhamsta/Aimmy/contents/configs",
+    "LocalModelsDirectory": "bin/models",
+    "LocalConfigsDirectory": "bin/configs"
+  },
+  "Update": {
+    "Enabled": true,
+    "Channel": "stable",
+    "PackageType": "deb",
+    "ReleasesApiUrl": "https://api.github.com/repos/Babyhamsta/Aimmy/releases/latest"
+  }
+}
