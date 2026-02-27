@@ -113,6 +113,7 @@ jobs:
             python3-tkinter \
             which \
             xorg-x11-server-Xvfb \
+            xorg-x11-utils \
             zlib
 
       - name: Checkout
