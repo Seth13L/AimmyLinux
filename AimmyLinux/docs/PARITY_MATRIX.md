@@ -25,6 +25,7 @@
 | X11 native capture backend | N/A | Yes | Done |
 | External capture backends (grim/maim/import/scrot) | N/A | Yes | Done |
 | Display selection + DPI scaling | Yes | Yes (display offsets + scaling factors) | Done |
+| Display auto-discovery | Yes | Yes (`xrandr` discovery + selection) | Done |
 | uinput-first input policy | N/A | Yes (uinput via ydotool path) | In Progress |
 | xdotool fallback | N/A | Yes | Done |
 | ydotool fallback | N/A | Yes | Done |
@@ -49,7 +50,7 @@
 | FOV overlay | Yes | Yes (X11 tkinter overlay) | Done |
 | ESP overlay | Yes | Yes (boxes/confidence/tracers) | Done |
 | Global hotkey capture UX | Yes | Fallback backend | In Progress |
-| Full desktop GUI | WPF | Avalonia scaffold | In Progress |
+| Full desktop GUI | WPF | Avalonia viewmodel wiring + scaffold | In Progress |
 
 ## Store / Update / Packaging
 | Area | Windows | Linux v1 | Status |

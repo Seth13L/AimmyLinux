@@ -30,6 +30,8 @@ This commit establishes the migration baseline needed for phased feature parity.
 - Runtime diagnostics with FPS and p50/p95 latencies.
 - Linux capability probe with explicit feature state reporting.
 - Multi-monitor display offset + DPI-aware capture/overlay geometry.
+- X11 display discovery service (`xrandr`) with selection wiring in runtime CLI.
+- Avalonia configuration editor view models for display selection and data-collection settings.
 - Linux backend factories:
   - capture (external tool fallback)
   - input (`uinput`/`ydotool`, `xdotool`, noop)
@@ -43,6 +45,5 @@ This commit establishes the migration baseline needed for phased feature parity.
 
 ## Still Pending for Full v1 Parity
 
-- Display auto-discovery/selection UI wiring in Avalonia.
-- Full Avalonia parity UI implementation.
+- Full Avalonia parity window/screen implementation (beyond viewmodel wiring).
 - End-to-end validation against Ubuntu/Fedora hardware matrix.

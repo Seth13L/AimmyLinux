@@ -22,6 +22,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\AimmyLinux.csproj" />
     <ProjectReference Include="..\..\src\Aimmy.Core\Aimmy.Core.csproj" />
+    <ProjectReference Include="..\..\src\Aimmy.Platform.Abstractions\Aimmy.Platform.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Aimmy.Platform.Linux.X11\Aimmy.Platform.Linux.X11.csproj" />
+    <ProjectReference Include="..\..\src\Aimmy.UI.Avalonia\Aimmy.UI.Avalonia.csproj" />
   </ItemGroup>
 </Project>

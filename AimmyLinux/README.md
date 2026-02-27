@@ -64,6 +64,9 @@ Useful flags:
 dotnet run -c Release -- --model /path/to/model.onnx --fps 120 --dry-run true
 dotnet run -c Release -- --list-model-store
 dotnet run -c Release -- --check-update --current-version 3.0.0
+dotnet run -c Release -- --list-displays
+dotnet run -c Release -- --select-display DP-1 --save-config
+dotnet run -c Release -- --use-primary-display --save-config
 dotnet run -c Release -- --save-config
 ```
 

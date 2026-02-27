@@ -7,6 +7,7 @@ using Aimmy.Linux.App.Services.Runtime;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Linux.X11.Capture;
 using Aimmy.Platform.Linux.X11.Config;
+using Aimmy.Platform.Linux.X11.Display;
 using Aimmy.Platform.Linux.X11.Hotkeys;
 using Aimmy.Platform.Linux.X11.Input;
 using Aimmy.Platform.Linux.X11.Overlay;
@@ -118,10 +119,52 @@ ApplyOverrides(config, parsedArgs);
 config.Model.ModelPath = ResolvePath(config.Model.ModelPath, configPath);
 Console.WriteLine(loadMessage);
 
-if (string.IsNullOrWhiteSpace(config.Model.ModelPath) || !File.Exists(config.Model.ModelPath))
+var commandRunner = ProcessRunner.Instance;
+var displayDiscoveryService = new X11DisplayDiscoveryService(commandRunner);
+
+if (parsedArgs.ContainsKey("list-displays"))
 {
-    Console.Error.WriteLine($"Model file does not exist: {config.Model.ModelPath}");
-    return 1;
+    var displays = await displayDiscoveryService.DiscoverAsync(CancellationToken.None);
+    if (displays.Count == 0)
+    {
+        Console.WriteLine("No X11 displays discovered.");
+        return 0;
+    }
+
+    foreach (var display in displays)
+    {
+        Console.WriteLine(
+            $"{display.Id} primary={display.IsPrimary} geometry={display.Width}x{display.Height}+{display.OriginX}+{display.OriginY} " +
+            $"dpi={display.DpiScaleX:F2}x{display.DpiScaleY:F2}");
+    }
+
+    return 0;
+}
+
+if (parsedArgs.TryGetValue("select-display", out var selectedDisplayId) || parsedArgs.ContainsKey("use-primary-display"))
+{
+    var displays = await displayDiscoveryService.DiscoverAsync(CancellationToken.None);
+    var selectedDisplay = parsedArgs.ContainsKey("use-primary-display")
+        ? displays.FirstOrDefault(d => d.IsPrimary)
+        : displays.FirstOrDefault(d => string.Equals(d.Id, selectedDisplayId, StringComparison.OrdinalIgnoreCase));
+
+    if (selectedDisplay is null)
+    {
+        Console.Error.WriteLine($"Unable to resolve display selection '{selectedDisplayId ?? "primary"}'.");
+        return 1;
+    }
+
+    config.Capture.DisplayWidth = selectedDisplay.Width;
+    config.Capture.DisplayHeight = selectedDisplay.Height;
+    config.Capture.DisplayOffsetX = selectedDisplay.OriginX;
+    config.Capture.DisplayOffsetY = selectedDisplay.OriginY;
+    config.Capture.DpiScaleX = selectedDisplay.DpiScaleX;
+    config.Capture.DpiScaleY = selectedDisplay.DpiScaleY;
+    config.Normalize();
+
+    Console.WriteLine(
+        $"Selected display {selectedDisplay.Id}: {selectedDisplay.Width}x{selectedDisplay.Height}+{selectedDisplay.OriginX}+{selectedDisplay.OriginY} " +
+        $"dpi={selectedDisplay.DpiScaleX:F2}x{selectedDisplay.DpiScaleY:F2}");
 }
 
 if (parsedArgs.ContainsKey("save-config"))
@@ -165,7 +208,12 @@ if (parsedArgs.ContainsKey("list-model-store"))
     return 0;
 }
 
-var commandRunner = ProcessRunner.Instance;
+if (string.IsNullOrWhiteSpace(config.Model.ModelPath) || !File.Exists(config.Model.ModelPath))
+{
+    Console.Error.WriteLine($"Model file does not exist: {config.Model.ModelPath}");
+    return 1;
+}
+
 var environmentVariableReader = new Func<string, string?>(Environment.GetEnvironmentVariable);
 
 var capabilityProbe = new LinuxRuntimeCapabilityProbe(commandRunner, environmentVariableReader);
