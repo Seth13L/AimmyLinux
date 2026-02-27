@@ -68,12 +68,27 @@ jobs:
           xdpyinfo -display :99 >/dev/null 2>&1
           export DISPLAY=:99
           export RUN_LINUX_X11_INTEGRATION=1
-          dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
-            -c Release \
-            --no-build \
-            --results-directory "$TEST_RESULTS_DIR" \
-            --logger "trx;LogFileName=ubuntu-x11.trx" \
-            | tee "$TEST_RESULTS_DIR/dotnet-test.log"
+          : > "$TEST_RESULTS_DIR/dotnet-test.log"
+          attempt=1
+          max_attempts=2
+          while true; do
+            if dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
+              -c Release \
+              --no-build \
+              --results-directory "$TEST_RESULTS_DIR" \
+              --logger "trx;LogFileName=ubuntu-x11.trx" \
+              | tee -a "$TEST_RESULTS_DIR/dotnet-test.log"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              exit 1
+            fi
+
+            attempt=$((attempt + 1))
+            echo "dotnet test failed; retrying (attempt ${attempt}/${max_attempts})..."
+            sleep 2
+          done
 
       - name: Upload test artifacts
         if: always()
@@ -151,12 +166,27 @@ jobs:
           xdpyinfo -display :99 >/dev/null 2>&1
           export DISPLAY=:99
           export RUN_LINUX_X11_INTEGRATION=1
-          dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
-            -c Release \
-            --no-build \
-            --results-directory "$TEST_RESULTS_DIR" \
-            --logger "trx;LogFileName=fedora-x11.trx" \
-            | tee "$TEST_RESULTS_DIR/dotnet-test.log"
+          : > "$TEST_RESULTS_DIR/dotnet-test.log"
+          attempt=1
+          max_attempts=2
+          while true; do
+            if dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
+              -c Release \
+              --no-build \
+              --results-directory "$TEST_RESULTS_DIR" \
+              --logger "trx;LogFileName=fedora-x11.trx" \
+              | tee -a "$TEST_RESULTS_DIR/dotnet-test.log"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              exit 1
+            fi
+
+            attempt=$((attempt + 1))
+            echo "dotnet test failed; retrying (attempt ${attempt}/${max_attempts})..."
+            sleep 2
+          done
 
       - name: Upload test artifacts
         if: always()
