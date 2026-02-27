@@ -44,6 +44,5 @@ This commit establishes the migration baseline needed for phased feature parity.
 ## Still Pending for Full v1 Parity
 
 - Display auto-discovery/selection UI wiring in Avalonia.
-- Extended data-collection/auto-label parity behavior.
 - Full Avalonia parity UI implementation.
 - End-to-end validation against Ubuntu/Fedora hardware matrix.

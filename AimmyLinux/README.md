@@ -75,6 +75,10 @@ dotnet run -c Release -- --save-config
 - Multi-monitor and DPI settings are in `Capture`:
   - `DisplayOffsetX` / `DisplayOffsetY`: top-left origin of the target display in the X11 virtual desktop.
   - `DpiScaleX` / `DpiScaleY`: scaling factors applied to capture geometry, FOV sizing, and overlay projection.
+- Data collection:
+  - Set `DataCollection.CollectDataWhilePlaying=true` to save captured frames.
+  - Set `DataCollection.AutoLabelData=true` to emit YOLO labels for selected detections.
+  - Output paths are controlled by `DataCollection.ImagesDirectory` and `DataCollection.LabelsDirectory`.
 
 ## Capability Flags
 

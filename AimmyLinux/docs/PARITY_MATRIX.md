@@ -41,6 +41,7 @@
 | Auto trigger (single click) | Yes | Yes | Done |
 | Spray mode | Yes | Yes | Done |
 | Cursor check | Yes | Crosshair-in-box trigger gating | Done |
+| Data collection + auto-label | Yes | Yes | Done |
 
 ## Overlay / UI / Hotkeys
 | Area | Windows | Linux v1 | Status |

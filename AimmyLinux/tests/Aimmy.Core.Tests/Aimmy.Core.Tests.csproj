@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\AimmyLinux.csproj" />
     <ProjectReference Include="..\..\src\Aimmy.Core\Aimmy.Core.csproj" />
     <ProjectReference Include="..\..\src\Aimmy.Platform.Linux.X11\Aimmy.Platform.Linux.X11.csproj" />
   </ItemGroup>

@@ -7,6 +7,7 @@
 - [ ] Performs aim movement with selected input backend.
 - [ ] Supports prediction strategy selection (`Kalman`, `Shalloe`, `WiseTheFox`).
 - [ ] Supports auto trigger single-click and spray behaviors.
+- [ ] Supports data collection image capture with optional auto-label output.
 - [ ] Supports model/config store listing and download operations.
 - [ ] Supports package-aware update check.
 

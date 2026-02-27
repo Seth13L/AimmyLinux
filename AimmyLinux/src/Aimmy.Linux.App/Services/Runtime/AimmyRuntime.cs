@@ -7,6 +7,7 @@ using Aimmy.Core.Movement;
 using Aimmy.Core.Prediction;
 using Aimmy.Core.Targeting;
 using Aimmy.Core.Trigger;
+using Aimmy.Linux.App.Services.Data;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Abstractions.Models;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ public sealed class AimmyRuntime
     private readonly RuntimeDiagnostics _diagnostics = new();
     private readonly RuntimeAssertionThresholds _runtimeThresholds;
     private readonly CaptureGeometry _captureGeometry;
+    private readonly RuntimeDataCollector _dataCollector;
 
     private Detection? _stickyTarget;
     private DateTime _lastTriggerTime = DateTime.MinValue;
@@ -50,6 +52,7 @@ public sealed class AimmyRuntime
         _overlay = overlay;
         _predictor = predictor;
         _captureGeometry = CaptureGeometryResolver.Resolve(config.Capture);
+        _dataCollector = new RuntimeDataCollector(config.DataCollection);
         _runtimeThresholds = new RuntimeAssertionThresholds(
             config.Runtime.DiagnosticsMinimumFps,
             config.Runtime.DiagnosticsMaxCaptureP95Ms,
@@ -97,6 +100,15 @@ public sealed class AimmyRuntime
             $"Capture geometry: display={_captureGeometry.DisplayWidth}x{_captureGeometry.DisplayHeight}@({_captureGeometry.DisplayOriginX},{_captureGeometry.DisplayOriginY}) " +
             $"capture={_captureGeometry.CaptureWidth}x{_captureGeometry.CaptureHeight}@({_captureGeometry.CaptureX},{_captureGeometry.CaptureY}) " +
             $"dpi={_captureGeometry.DpiScaleX:F2}x{_captureGeometry.DpiScaleY:F2}");
+        if (_config.DataCollection.CollectDataWhilePlaying)
+        {
+            Console.WriteLine($"Data collection: images={_dataCollector.ImagesDirectory}");
+            Console.WriteLine($"Data collection auto-label: {_config.DataCollection.AutoLabelData}");
+            if (_config.DataCollection.AutoLabelData)
+            {
+                Console.WriteLine($"Data collection labels={_dataCollector.LabelsDirectory}");
+            }
+        }
 
         var frameInterval = TimeSpan.FromMilliseconds(1000d / Math.Max(1, _config.Runtime.Fps));
         var loopStopwatch = new Stopwatch();
@@ -188,9 +200,12 @@ public sealed class AimmyRuntime
         if (selected is null)
         {
             await HandleNoTargetAsync(cancellationToken).ConfigureAwait(false);
+            HandleDataCollectionResult(_dataCollector.CollectFrame(frame, null, _config.Aim.ConstantTracking));
             await _overlay.ClearDetectionsAsync(cancellationToken).ConfigureAwait(false);
             return;
         }
+
+        HandleDataCollectionResult(_dataCollector.CollectFrame(frame, selected, _config.Aim.ConstantTracking));
 
         var predicted = _config.Prediction.Enabled
             ? _predictor.Predict(selected.Value, DateTime.UtcNow)
@@ -208,6 +223,19 @@ public sealed class AimmyRuntime
         if (_config.Overlay.ShowDetectedPlayer)
         {
             await _overlay.ShowDetectionsAsync(new[] { selected.Value }, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static void HandleDataCollectionResult(DataCollectionResult result)
+    {
+        if (result.Saved)
+        {
+            return;
+        }
+
+        if (result.Message is not null && result.Message.StartsWith("Save failed:", StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine($"Data collection warning: {result.Message}");
         }
     }
 
