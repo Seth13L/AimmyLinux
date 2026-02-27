@@ -6,6 +6,12 @@ namespace Aimmy.Platform.Linux.X11.Hotkeys;
 
 public sealed class X11HotkeyBackend : IHotkeyBackend
 {
+    private const uint LockMask = 1u << 1;
+    private const uint Mod2Mask = 1u << 4;
+    private const long ButtonPressMask = 1L << 2;
+    private const long ButtonReleaseMask = 1L << 3;
+    private const int GrabModeAsync = 1;
+
     private const uint Button1Mask = 1u << 8;
     private const uint Button2Mask = 1u << 9;
     private const uint Button3Mask = 1u << 10;
@@ -45,38 +51,41 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         ["rightarrow"] = "Right"
     };
 
-    private static readonly Dictionary<string, uint> MouseAliasMap = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, MouseBinding> MouseAliasMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["left"] = Button1Mask,
-        ["lbutton"] = Button1Mask,
-        ["mouse1"] = Button1Mask,
-        ["mb1"] = Button1Mask,
-        ["middle"] = Button2Mask,
-        ["mbutton"] = Button2Mask,
-        ["mouse3"] = Button2Mask,
-        ["mb3"] = Button2Mask,
-        ["right"] = Button3Mask,
-        ["rbutton"] = Button3Mask,
-        ["mouse2"] = Button3Mask,
-        ["mb2"] = Button3Mask,
-        ["xbutton1"] = Button4Mask,
-        ["mouse4"] = Button4Mask,
-        ["mb4"] = Button4Mask,
-        ["xbutton2"] = Button5Mask,
-        ["mouse5"] = Button5Mask,
-        ["mb5"] = Button5Mask
+        ["left"] = new MouseBinding(Button1Mask, 1),
+        ["lbutton"] = new MouseBinding(Button1Mask, 1),
+        ["mouse1"] = new MouseBinding(Button1Mask, 1),
+        ["mb1"] = new MouseBinding(Button1Mask, 1),
+        ["middle"] = new MouseBinding(Button2Mask, 2),
+        ["mbutton"] = new MouseBinding(Button2Mask, 2),
+        ["mouse3"] = new MouseBinding(Button2Mask, 2),
+        ["mb3"] = new MouseBinding(Button2Mask, 2),
+        ["right"] = new MouseBinding(Button3Mask, 3),
+        ["rbutton"] = new MouseBinding(Button3Mask, 3),
+        ["mouse2"] = new MouseBinding(Button3Mask, 3),
+        ["mb2"] = new MouseBinding(Button3Mask, 3),
+        ["xbutton1"] = new MouseBinding(Button4Mask, 4),
+        ["mouse4"] = new MouseBinding(Button4Mask, 4),
+        ["mb4"] = new MouseBinding(Button4Mask, 4),
+        ["xbutton2"] = new MouseBinding(Button5Mask, 5),
+        ["mouse5"] = new MouseBinding(Button5Mask, 5),
+        ["mb5"] = new MouseBinding(Button5Mask, 5)
     };
 
     private readonly Func<string, string?> _environmentVariableReader;
     private readonly Dictionary<string, string> _configuredBindings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BindingProbe> _resolvedBindings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _bindingStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<GrabbedKey> _grabbedKeys = new();
+    private readonly HashSet<GrabbedButton> _grabbedButtons = new();
     private readonly object _sync = new();
 
     private IntPtr _display;
     private IntPtr _rootWindow;
     private CancellationTokenSource? _pollCts;
     private Task? _pollTask;
+    private string _backendName = "x11-hotkeys(global-poll)";
     private bool _started;
     private bool _disposed;
 
@@ -93,7 +102,16 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         _configuredBindings["Model Switch Keybind"] = config.Input.ModelSwitchKeybind;
     }
 
-    public string Name => "x11-hotkeys(global-poll)";
+    public string Name
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _backendName;
+            }
+        }
+    }
 
     public static bool IsSupported(
         Func<string, string?> environmentVariableReader,
@@ -169,6 +187,19 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
             _rootWindow = XDefaultRootWindow(_display);
             ResolveBindingsLocked();
 
+            if (TryRegisterGlobalGrabsLocked(out var grabReason))
+            {
+                _backendName = "x11-hotkeys(grab+poll)";
+            }
+            else
+            {
+                _backendName = "x11-hotkeys(global-poll)";
+                if (!string.IsNullOrWhiteSpace(grabReason))
+                {
+                    Console.WriteLine($"Hotkey grab fallback active: {grabReason}");
+                }
+            }
+
             _pollCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _pollTask = Task.Run(() => PollAsync(_pollCts.Token), CancellationToken.None);
             _started = true;
@@ -219,6 +250,7 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         finally
         {
             pollCts?.Dispose();
+            ReleaseGlobalGrabsUnsafe();
             CloseDisplayUnsafe();
         }
     }
@@ -231,7 +263,14 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
             return false;
         }
 
-        return MouseAliasMap.TryGetValue(bindingName.Trim(), out buttonMask);
+        if (!MouseAliasMap.TryGetValue(bindingName.Trim(), out var mouseBinding))
+        {
+            buttonMask = 0;
+            return false;
+        }
+
+        buttonMask = mouseBinding.Mask;
+        return true;
     }
 
     public static string CanonicalizeKeysymName(string bindingName)
@@ -324,9 +363,9 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
 
     private BindingProbe ResolveBinding(string configuredValue)
     {
-        if (TryResolveMouseButtonMask(configuredValue, out var mouseMask))
+        if (TryResolveMouseButton(configuredValue, out var mouseMask, out var mouseButton))
         {
-            return BindingProbe.ForMouse(mouseMask);
+            return BindingProbe.ForMouse(mouseMask, mouseButton);
         }
 
         var keysymName = CanonicalizeKeysymName(configuredValue);
@@ -345,6 +384,100 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         return keyCode == 0
             ? BindingProbe.None
             : BindingProbe.ForKey(keyCode);
+    }
+
+    private bool TryRegisterGlobalGrabsLocked(out string reason)
+    {
+        _grabbedKeys.Clear();
+        _grabbedButtons.Clear();
+
+        try
+        {
+            if (_display == IntPtr.Zero || _rootWindow == IntPtr.Zero)
+            {
+                reason = "Display is not initialized for global grabs.";
+                return false;
+            }
+
+            var keyboardCodes = _resolvedBindings.Values
+                .Where(binding => binding.Kind == BindingKind.Keyboard && binding.KeyCode != 0)
+                .Select(binding => (int)binding.KeyCode)
+                .Distinct()
+                .ToArray();
+
+            var mouseButtons = _resolvedBindings.Values
+                .Where(binding => binding.Kind == BindingKind.MouseButton && binding.MouseButton != 0)
+                .Select(binding => binding.MouseButton)
+                .Distinct()
+                .ToArray();
+
+            if (keyboardCodes.Length == 0 && mouseButtons.Length == 0)
+            {
+                reason = "No resolvable hotkey bindings were found for X11 grabs.";
+                return false;
+            }
+
+            var modifierVariants = new[] { 0u, LockMask, Mod2Mask, LockMask | Mod2Mask };
+
+            foreach (var keyCode in keyboardCodes)
+            {
+                foreach (var modifiers in modifierVariants)
+                {
+                    XGrabKey(_display, keyCode, modifiers, _rootWindow, true, GrabModeAsync, GrabModeAsync);
+                    _grabbedKeys.Add(new GrabbedKey(keyCode, modifiers));
+                }
+            }
+
+            foreach (var button in mouseButtons)
+            {
+                foreach (var modifiers in modifierVariants)
+                {
+                    XGrabButton(
+                        _display,
+                        button,
+                        modifiers,
+                        _rootWindow,
+                        true,
+                        (uint)(ButtonPressMask | ButtonReleaseMask),
+                        GrabModeAsync,
+                        GrabModeAsync,
+                        IntPtr.Zero,
+                        IntPtr.Zero);
+                    _grabbedButtons.Add(new GrabbedButton(button, modifiers));
+                }
+            }
+
+            _ = XSync(_display, false);
+            reason = "X11 global key/button grabs registered.";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            reason = $"Failed to register X11 grabs: {ex.Message}";
+            ReleaseGlobalGrabsUnsafe();
+            return false;
+        }
+    }
+
+    private static bool TryResolveMouseButton(string bindingName, out uint buttonMask, out uint button)
+    {
+        if (string.IsNullOrWhiteSpace(bindingName))
+        {
+            buttonMask = 0;
+            button = 0;
+            return false;
+        }
+
+        if (!MouseAliasMap.TryGetValue(bindingName.Trim(), out var mouseBinding))
+        {
+            buttonMask = 0;
+            button = 0;
+            return false;
+        }
+
+        buttonMask = mouseBinding.Mask;
+        button = mouseBinding.Button;
+        return true;
     }
 
     private static bool IsKeyCodePressed(byte[] keymap, byte keyCode)
@@ -382,6 +515,55 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         }
     }
 
+    private void ReleaseGlobalGrabsUnsafe()
+    {
+        lock (_sync)
+        {
+            if (_display == IntPtr.Zero || _rootWindow == IntPtr.Zero)
+            {
+                _grabbedKeys.Clear();
+                _grabbedButtons.Clear();
+                return;
+            }
+
+            foreach (var key in _grabbedKeys)
+            {
+                try
+                {
+                    XUngrabKey(_display, key.KeyCode, key.Modifiers, _rootWindow);
+                }
+                catch
+                {
+                    // Ignore ungrab failures during shutdown.
+                }
+            }
+
+            foreach (var button in _grabbedButtons)
+            {
+                try
+                {
+                    XUngrabButton(_display, button.Button, button.Modifiers, _rootWindow);
+                }
+                catch
+                {
+                    // Ignore ungrab failures during shutdown.
+                }
+            }
+
+            _grabbedKeys.Clear();
+            _grabbedButtons.Clear();
+
+            try
+            {
+                _ = XSync(_display, false);
+            }
+            catch
+            {
+                // Ignore sync failures during shutdown.
+            }
+        }
+    }
+
     private enum BindingKind
     {
         None = 0,
@@ -389,12 +571,16 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
         MouseButton = 2
     }
 
-    private readonly record struct BindingProbe(BindingKind Kind, byte KeyCode, uint MouseMask)
+    private readonly record struct BindingProbe(BindingKind Kind, byte KeyCode, uint MouseMask, uint MouseButton)
     {
-        public static BindingProbe None => new(BindingKind.None, 0, 0);
-        public static BindingProbe ForKey(byte keyCode) => new(BindingKind.Keyboard, keyCode, 0);
-        public static BindingProbe ForMouse(uint mouseMask) => new(BindingKind.MouseButton, 0, mouseMask);
+        public static BindingProbe None => new(BindingKind.None, 0, 0, 0);
+        public static BindingProbe ForKey(byte keyCode) => new(BindingKind.Keyboard, keyCode, 0, 0);
+        public static BindingProbe ForMouse(uint mouseMask, uint mouseButton) => new(BindingKind.MouseButton, 0, mouseMask, mouseButton);
     }
+
+    private readonly record struct MouseBinding(uint Mask, uint Button);
+    private readonly record struct GrabbedKey(int KeyCode, uint Modifiers);
+    private readonly record struct GrabbedButton(uint Button, uint Modifiers);
 
     [DllImport("libX11.so.6")]
     private static extern IntPtr XOpenDisplay(IntPtr displayName);
@@ -425,4 +611,36 @@ public sealed class X11HotkeyBackend : IHotkeyBackend
 
     [DllImport("libX11.so.6")]
     private static extern byte XKeysymToKeycode(IntPtr display, nuint keysym);
+
+    [DllImport("libX11.so.6")]
+    private static extern void XGrabKey(
+        IntPtr display,
+        int keycode,
+        uint modifiers,
+        IntPtr grabWindow,
+        bool ownerEvents,
+        int pointerMode,
+        int keyboardMode);
+
+    [DllImport("libX11.so.6")]
+    private static extern void XUngrabKey(IntPtr display, int keycode, uint modifiers, IntPtr grabWindow);
+
+    [DllImport("libX11.so.6")]
+    private static extern void XGrabButton(
+        IntPtr display,
+        uint button,
+        uint modifiers,
+        IntPtr grabWindow,
+        bool ownerEvents,
+        uint eventMask,
+        int pointerMode,
+        int keyboardMode,
+        IntPtr confineTo,
+        IntPtr cursor);
+
+    [DllImport("libX11.so.6")]
+    private static extern void XUngrabButton(IntPtr display, uint button, uint modifiers, IntPtr grabWindow);
+
+    [DllImport("libX11.so.6")]
+    private static extern int XSync(IntPtr display, bool discard);
 }

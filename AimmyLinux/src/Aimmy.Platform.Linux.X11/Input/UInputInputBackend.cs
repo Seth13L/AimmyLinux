@@ -7,13 +7,17 @@ public sealed class UInputInputBackend : IInputBackend
 {
     private readonly YDotoolInputBackend _delegate;
 
-    public UInputInputBackend(ICommandRunner? commandRunner = null)
+    public UInputInputBackend(
+        ICommandRunner? commandRunner = null,
+        Func<ICommandRunner, UInputSetupStatus>? setupProbe = null)
     {
         var runner = commandRunner ?? ProcessRunner.Instance;
+        var probe = setupProbe ?? (r => UInputSetupDiagnostics.Probe(r));
+        var setupStatus = probe(runner);
 
-        if (!runner.CommandExists("ydotool"))
+        if (!setupStatus.IsSupported)
         {
-            throw new InvalidOperationException("uinput backend requires ydotool to be installed.");
+            throw new InvalidOperationException($"uinput backend is unavailable: {setupStatus.Message}");
         }
 
         _delegate = new YDotoolInputBackend(runner);

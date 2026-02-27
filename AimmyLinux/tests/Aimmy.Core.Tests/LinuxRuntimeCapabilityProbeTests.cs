@@ -1,4 +1,5 @@
 using Aimmy.Core.Enums;
+using Aimmy.Platform.Linux.X11.Input;
 using Aimmy.Platform.Linux.X11.Runtime;
 using Xunit;
 
@@ -53,14 +54,22 @@ public sealed class LinuxRuntimeCapabilityProbeTests
 
         var probe = new LinuxRuntimeCapabilityProbe(
             runner,
-            key => key == "DISPLAY" ? ":0" : null);
+            key => key == "DISPLAY" ? ":0" : null,
+            _ => (false, "capture unsupported"),
+            _ => (true, "hotkeys supported"),
+            _ => new UInputSetupStatus(
+                YDotoolInstalled: true,
+                DevicePresent: true,
+                DeviceWritable: true,
+                DevicePath: "/dev/uinput",
+                Message: "uinput primary path is ready (/dev/uinput)."));
 
         var caps = probe.Probe();
         var input = caps.Get("InputBackend");
 
         Assert.Equal(FeatureState.Enabled, input.State);
         Assert.False(input.IsDegraded);
-        Assert.Contains("ydotool", input.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("uinput", input.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(FeatureState.Unavailable, caps.Get("Overlay").State);
     }
 
@@ -99,6 +108,32 @@ public sealed class LinuxRuntimeCapabilityProbeTests
 
         Assert.Equal(FeatureState.Enabled, hotkeys.State);
         Assert.False(hotkeys.IsDegraded);
+    }
+
+    [Fact]
+    public void Probe_X11Session_WhenUInputNotWritable_UsesXdotoolAsDegradedFallback()
+    {
+        var runner = new FakeCommandRunner(
+            commandExists: command => command is "ydotool" or "xdotool" or "maim");
+
+        var probe = new LinuxRuntimeCapabilityProbe(
+            runner,
+            key => key == "DISPLAY" ? ":0" : null,
+            _ => (false, "capture unsupported"),
+            _ => (true, "hotkeys supported"),
+            _ => new UInputSetupStatus(
+                YDotoolInstalled: true,
+                DevicePresent: true,
+                DeviceWritable: false,
+                DevicePath: "/dev/uinput",
+                Message: "uinput device exists but is not writable."));
+
+        var caps = probe.Probe();
+        var input = caps.Get("InputBackend");
+
+        Assert.Equal(FeatureState.Enabled, input.State);
+        Assert.True(input.IsDegraded);
+        Assert.Contains("falling back to xdotool", input.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

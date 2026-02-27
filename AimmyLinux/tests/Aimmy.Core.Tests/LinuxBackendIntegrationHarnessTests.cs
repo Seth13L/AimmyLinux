@@ -37,7 +37,10 @@ public sealed class LinuxBackendIntegrationHarnessTests
             environmentVariableReader: EnvReader,
             nativeSupportProbe: _ => (true, "native supported"),
             nativeBackendFactory: (_, _) => new TestCaptureBackend("native-test"));
-        var input = InputBackendFactory.Create(config, runner);
+        var input = InputBackendFactory.Create(
+            config,
+            runner,
+            _ => new UInputSetupStatus(true, true, true, "/dev/uinput", "uinput primary path is ready (/dev/uinput)."));
         var hotkeys = HotkeyBackendFactory.Create(config, EnvReader, _ => (true, "hotkeys supported"));
         var overlay = OverlayBackendFactory.Create(config, runner, EnvReader);
 
@@ -45,7 +48,8 @@ public sealed class LinuxBackendIntegrationHarnessTests
             runner,
             EnvReader,
             _ => (true, "native supported"),
-            _ => (true, "hotkeys supported"));
+            _ => (true, "hotkeys supported"),
+            _ => new UInputSetupStatus(true, true, true, "/dev/uinput", "uinput primary path is ready (/dev/uinput)."));
         var caps = probe.Probe();
 
         Assert.Equal("native-test", capture.Name);
@@ -89,7 +93,10 @@ public sealed class LinuxBackendIntegrationHarnessTests
             environmentVariableReader: EnvReader,
             nativeSupportProbe: _ => (false, "native unsupported"),
             nativeBackendFactory: (_, _) => new TestCaptureBackend("native-test"));
-        var input = InputBackendFactory.Create(config, runner);
+        var input = InputBackendFactory.Create(
+            config,
+            runner,
+            _ => new UInputSetupStatus(false, false, false, string.Empty, "ydotool is not installed."));
         var hotkeys = HotkeyBackendFactory.Create(config, EnvReader, _ => (false, "hotkeys unsupported"));
         var overlay = OverlayBackendFactory.Create(config, runner, EnvReader);
 
@@ -97,7 +104,8 @@ public sealed class LinuxBackendIntegrationHarnessTests
             runner,
             EnvReader,
             _ => (false, "native unsupported"),
-            _ => (false, "hotkeys unsupported"));
+            _ => (false, "hotkeys unsupported"),
+            _ => new UInputSetupStatus(false, false, false, string.Empty, "ydotool is not installed."));
         var caps = probe.Probe();
 
         Assert.StartsWith("ExternalCapture(", capture.Name, StringComparison.Ordinal);

@@ -45,4 +45,46 @@ public sealed class InputBackendFactoryTests
 
         Assert.Equal("noop", backend.Name);
     }
+
+    [Fact]
+    public void Create_UInputPreferred_FallsBackToXdotool_WhenUInputDiagnosticsFail()
+    {
+        var config = AimmyConfig.CreateDefault();
+        config.Runtime.DryRun = false;
+        config.Input.PreferredMethod = InputMethod.UInput;
+
+        var runner = new FakeCommandRunner(commandExists: command => command is "ydotool" or "xdotool");
+        var backend = InputBackendFactory.Create(
+            config,
+            runner,
+            _ => new UInputSetupStatus(
+                YDotoolInstalled: true,
+                DevicePresent: true,
+                DeviceWritable: false,
+                DevicePath: "/dev/uinput",
+                Message: "uinput device exists but is not writable."));
+
+        Assert.Equal("xdotool", backend.Name);
+    }
+
+    [Fact]
+    public void Create_UInputPreferred_UsesUInput_WhenDiagnosticsPass()
+    {
+        var config = AimmyConfig.CreateDefault();
+        config.Runtime.DryRun = false;
+        config.Input.PreferredMethod = InputMethod.UInput;
+
+        var runner = new FakeCommandRunner(commandExists: command => command == "ydotool");
+        var backend = InputBackendFactory.Create(
+            config,
+            runner,
+            _ => new UInputSetupStatus(
+                YDotoolInstalled: true,
+                DevicePresent: true,
+                DeviceWritable: true,
+                DevicePath: "/dev/uinput",
+                Message: "uinput primary path is ready (/dev/uinput)."));
+
+        Assert.Equal("uinput(ydotool)", backend.Name);
+    }
 }

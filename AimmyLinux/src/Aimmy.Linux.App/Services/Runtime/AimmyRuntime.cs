@@ -117,6 +117,12 @@ public sealed class AimmyRuntime
         {
             loopStopwatch.Restart();
 
+            if (_hotkeys.IsPressed("Emergency Stop Keybind"))
+            {
+                Console.WriteLine("Emergency stop keybind pressed. Stopping runtime.");
+                break;
+            }
+
             try
             {
                 await ProcessFrameAsync(region, cancellationToken).ConfigureAwait(false);

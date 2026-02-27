@@ -7,7 +7,10 @@ namespace Aimmy.Platform.Linux.X11.Input;
 
 public static class InputBackendFactory
 {
-    public static IInputBackend Create(AimmyConfig config, ICommandRunner? commandRunner = null)
+    public static IInputBackend Create(
+        AimmyConfig config,
+        ICommandRunner? commandRunner = null,
+        Func<ICommandRunner, UInputSetupStatus>? uinputSetupProbe = null)
     {
         var runner = commandRunner ?? ProcessRunner.Instance;
 
@@ -15,7 +18,7 @@ public static class InputBackendFactory
             ? new NoopInputBackend()
             : config.Input.PreferredMethod switch
             {
-                InputMethod.UInput => TryCreateBackend(() => new UInputInputBackend(runner))
+                InputMethod.UInput => TryCreateBackend(() => new UInputInputBackend(runner, uinputSetupProbe))
                     ?? TryCreateBackend(() => new XDotoolInputBackend(runner))
                     ?? TryCreateBackend(() => new YDotoolInputBackend(runner))
                     ?? new NoopInputBackend(),

@@ -24,6 +24,7 @@ Install .NET SDK 8.0+ and runtime backends:
 - Input:
   - `ydotool` (preferred for `uinput`-centered path)
   - `xdotool` (fallback)
+  - writable `/dev/uinput` (or `/dev/input/uinput`) for `uinput` primary path
 - Overlay:
   - `python3` + `tkinter` (`python3-tk` package on Debian/Ubuntu)
 
@@ -92,6 +93,7 @@ Runtime prints capability states at startup (enabled/degraded/unavailable) for:
 - capture/input backend availability
 - hotkey/overlay readiness
 - store/update services
+- `uinput` setup diagnostics with actionable remediation hints
 
 ## Packaging
 
@@ -104,5 +106,5 @@ Initial package scripts:
 
 - Native X11 capture is implemented; SHM-specific optimization is pending.
 - Linux overlay uses a Python/tkinter renderer and may vary across desktop stacks.
-- X11 global hotkeys require `libX11`; fallback hotkeys are used when unavailable.
+- X11 global hotkeys use X11 key/button grabs with polling fallback semantics.
 - Avalonia currently exposes configuration editing for display/data-collection sections; full menu-by-menu parity is still pending.

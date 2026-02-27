@@ -49,7 +49,7 @@
 |---|---|---|---|
 | FOV overlay | Yes | Yes (X11 tkinter overlay) | Done |
 | ESP overlay | Yes | Yes (boxes/confidence/tracers) | Done |
-| Global hotkey capture UX | Yes | Fallback backend | In Progress |
+| Global hotkey capture UX | Yes | X11 global key/button grabs + poll fallback path | Done |
 | Full desktop GUI | WPF | Avalonia config editor window + viewmodel wiring | In Progress |
 
 ## Store / Update / Packaging

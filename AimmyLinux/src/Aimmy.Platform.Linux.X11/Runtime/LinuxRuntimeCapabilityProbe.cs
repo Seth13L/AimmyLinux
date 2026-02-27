@@ -3,6 +3,7 @@ using Aimmy.Core.Enums;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Linux.X11.Capture;
 using Aimmy.Platform.Linux.X11.Hotkeys;
+using Aimmy.Platform.Linux.X11.Input;
 using Aimmy.Platform.Linux.X11.Overlay;
 using Aimmy.Platform.Linux.X11.Util;
 
@@ -14,17 +15,20 @@ public sealed class LinuxRuntimeCapabilityProbe : IRuntimeCapabilityProbe
     private readonly Func<string, string?> _environmentVariableReader;
     private readonly Func<Func<string, string?>, (bool Supported, string Reason)> _nativeCaptureSupportProbe;
     private readonly Func<Func<string, string?>, (bool Supported, string Reason)> _hotkeySupportProbe;
+    private readonly Func<ICommandRunner, UInputSetupStatus> _uinputSetupProbe;
 
     public LinuxRuntimeCapabilityProbe(
         ICommandRunner? commandRunner = null,
         Func<string, string?>? environmentVariableReader = null,
         Func<Func<string, string?>, (bool Supported, string Reason)>? nativeCaptureSupportProbe = null,
-        Func<Func<string, string?>, (bool Supported, string Reason)>? hotkeySupportProbe = null)
+        Func<Func<string, string?>, (bool Supported, string Reason)>? hotkeySupportProbe = null,
+        Func<ICommandRunner, UInputSetupStatus>? uinputSetupProbe = null)
     {
         _commandRunner = commandRunner ?? ProcessRunner.Instance;
         _environmentVariableReader = environmentVariableReader ?? Environment.GetEnvironmentVariable;
         _nativeCaptureSupportProbe = nativeCaptureSupportProbe ?? DefaultNativeCaptureSupportProbe;
         _hotkeySupportProbe = hotkeySupportProbe ?? DefaultHotkeySupportProbe;
+        _uinputSetupProbe = uinputSetupProbe ?? (runner => UInputSetupDiagnostics.Probe(runner));
     }
 
     public RuntimeCapabilities Probe()
@@ -50,7 +54,7 @@ public sealed class LinuxRuntimeCapabilityProbe : IRuntimeCapabilityProbe
             || _commandRunner.CommandExists("scrot");
 
         var hasXdotool = _commandRunner.CommandExists("xdotool");
-        var hasYdotool = _commandRunner.CommandExists("ydotool");
+        var uinputStatus = _uinputSetupProbe(_commandRunner);
 
         if (!isX11)
         {
@@ -73,13 +77,8 @@ public sealed class LinuxRuntimeCapabilityProbe : IRuntimeCapabilityProbe
                 caps.Set("CaptureBackend", FeatureState.Unavailable, true, $"No capture backend found. {nativeCaptureReason} (grim/maim/import/scrot unavailable)");
             }
 
-            var inputState = hasXdotool || hasYdotool ? FeatureState.Enabled : FeatureState.Unavailable;
-            var inputDegraded = hasXdotool && !hasYdotool;
-            var inputMessage = hasXdotool || hasYdotool
-                ? BuildInputMessage(hasXdotool, hasYdotool)
-                : "No supported input backend found (ydotool/xdotool).";
-
-            caps.Set("InputBackend", inputState, inputDegraded, inputMessage);
+            var inputCapability = BuildInputCapability(hasXdotool, uinputStatus);
+            caps.Set("InputBackend", inputCapability.State, inputCapability.IsDegraded, inputCapability.Message);
         }
 
         if (!isX11)
@@ -117,19 +116,32 @@ public sealed class LinuxRuntimeCapabilityProbe : IRuntimeCapabilityProbe
         return caps;
     }
 
-    private static string BuildInputMessage(bool hasXdotool, bool hasYdotool)
+    private static (FeatureState State, bool IsDegraded, string Message) BuildInputCapability(
+        bool hasXdotool,
+        UInputSetupStatus uinputStatus)
     {
-        if (hasXdotool && hasYdotool)
+        if (uinputStatus.IsSupported)
         {
-            return "Input backends available (ydotool, xdotool).";
+            var suffix = hasXdotool ? " xdotool fallback is also available." : string.Empty;
+            return (FeatureState.Enabled, false, uinputStatus.Message + suffix);
         }
 
-        if (hasYdotool)
+        if (hasXdotool)
         {
-            return "Input backend available (ydotool/uinput path).";
+            return (
+                FeatureState.Enabled,
+                true,
+                $"uinput path unavailable: {uinputStatus.Message} Falling back to xdotool.");
         }
 
-        return "Input backend available (xdotool fallback path).";
+        var missingFallbackHint = uinputStatus.YDotoolInstalled
+            ? "Install xdotool as an additional fallback."
+            : "Install ydotool (uinput path) or xdotool (fallback path).";
+
+        return (
+            FeatureState.Unavailable,
+            true,
+            $"No usable input backend. {uinputStatus.Message} {missingFallbackHint}");
     }
 
     private static (bool Supported, string Reason) DefaultHotkeySupportProbe(Func<string, string?> environmentVariableReader)

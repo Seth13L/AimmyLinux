@@ -35,8 +35,10 @@ This commit establishes the migration baseline needed for phased feature parity.
 - Linux backend factories:
   - capture (external tool fallback)
   - input (`uinput`/`ydotool`, `xdotool`, noop)
-  - hotkey fallback backend
+  - X11 hotkey backend with global grabs + poll fallback path
   - overlay noop backend
+- `uinput` setup diagnostics with explicit remediation guidance for missing device/permissions.
+- Runtime emergency-stop keybind handling with deterministic shutdown input release.
 - Store and updater service scaffolds (GitHub API driven).
 - Deb/RPM packaging script scaffolds.
 - Parity and acceptance docs:
