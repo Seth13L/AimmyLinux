@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aimmy.Core.Config;
+using Aimmy.Platform.Abstractions.Models;
 using Aimmy.UI.Avalonia.ViewModels;
 
 namespace Aimmy.UI.Avalonia.Windows;
@@ -14,6 +15,11 @@ public partial class MainWindow : Window
     private readonly ComboBox _discoveredDisplayComboBox;
     private readonly Grid _manualDisplayGrid;
     private readonly TextBlock _statusTextBlock;
+
+    public MainWindow()
+        : this(CreateDefaultLaunchOptions())
+    {
+    }
 
     public MainWindow(ConfigurationEditorLaunchOptions launchOptions)
     {
@@ -40,6 +46,17 @@ public partial class MainWindow : Window
             : $"Loaded {launchOptions.Displays.Count} discovered display(s).";
 
         SyncDisplaySelectionState();
+    }
+
+    private static ConfigurationEditorLaunchOptions CreateDefaultLaunchOptions()
+    {
+        return new ConfigurationEditorLaunchOptions
+        {
+            Config = AimmyConfig.CreateDefault(),
+            Displays = Array.Empty<DisplayInfo>(),
+            ConfigPath = "(design-time)",
+            SaveConfigCallback = _ => { }
+        };
     }
 
     private T FindRequiredControl<T>(string name) where T : Control
