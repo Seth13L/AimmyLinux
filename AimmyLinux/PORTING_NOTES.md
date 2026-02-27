@@ -42,8 +42,7 @@ This commit establishes the migration baseline needed for phased feature parity.
 
 ## Still Pending for Full v1 Parity
 
-- Native X11 shared-memory capture implementation.
-- Real Linux overlay backend (FOV + ESP).
-- Production global hotkey backend.
+- Multi-monitor display selection and DPI behavior parity.
+- Extended data-collection/auto-label parity behavior.
 - Full Avalonia parity UI implementation.
 - End-to-end validation against Ubuntu/Fedora hardware matrix.

@@ -5,6 +5,7 @@ using Aimmy.Core.Models;
 using Aimmy.Core.Movement;
 using Aimmy.Core.Prediction;
 using Aimmy.Core.Targeting;
+using Aimmy.Core.Trigger;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Abstractions.Models;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ public sealed class AimmyRuntime
 
     private Detection? _stickyTarget;
     private DateTime _lastTriggerTime = DateTime.MinValue;
+    private int _activeFovSize;
 
     public AimmyRuntime(
         AimmyConfig config,
@@ -58,7 +60,12 @@ public sealed class AimmyRuntime
 
         if (_config.Fov.Enabled && _config.Fov.ShowFov)
         {
-            await _overlay.ShowFovAsync(_config.Fov.Size, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
+            _activeFovSize = Math.Max(1, _config.Fov.Size);
+            await _overlay.ShowFovAsync(_activeFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _activeFovSize = Math.Max(1, _config.Fov.Size);
         }
 
         var region = CaptureRegion.Centered(
@@ -147,8 +154,22 @@ public sealed class AimmyRuntime
         inferenceStopwatch.Stop();
         _diagnostics.AddInferenceMs(inferenceStopwatch.Elapsed.TotalMilliseconds);
 
+        var resolvedFovSize = DynamicFovResolver.Resolve(_config, _hotkeys.IsPressed("Dynamic FOV Keybind"));
+        if (_config.Fov.Enabled && _config.Fov.ShowFov && resolvedFovSize != _activeFovSize)
+        {
+            _activeFovSize = resolvedFovSize;
+            await _overlay.ShowFovAsync(_activeFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
+        }
+
         var targetPoint = TargetPointResolver.Resolve(frame.Width, frame.Height, _config);
-        var candidate = TargetSelector.ClosestToTarget(detections, targetPoint.X, targetPoint.Y, _config, frame.Width, frame.Height);
+        var candidate = TargetSelector.ClosestToTarget(
+            detections,
+            targetPoint.X,
+            targetPoint.Y,
+            _config,
+            frame.Width,
+            frame.Height,
+            resolvedFovSize);
         var selected = StickyAimTracker.Resolve(_stickyTarget, candidate, detections, _config);
         _stickyTarget = selected;
 
@@ -170,7 +191,7 @@ public sealed class AimmyRuntime
             await _input.MoveRelativeAsync(aimVector.Dx, aimVector.Dy, cancellationToken).ConfigureAwait(false);
         }
 
-        await HandleTriggerAsync(selected.Value, cancellationToken).ConfigureAwait(false);
+        await HandleTriggerAsync(selected.Value, frame.Width, frame.Height, cancellationToken).ConfigureAwait(false);
 
         if (_config.Overlay.ShowDetectedPlayer)
         {
@@ -201,7 +222,7 @@ public sealed class AimmyRuntime
         }
     }
 
-    private async Task HandleTriggerAsync(Detection detection, CancellationToken cancellationToken)
+    private async Task HandleTriggerAsync(Detection detection, int frameWidth, int frameHeight, CancellationToken cancellationToken)
     {
         if (!_config.Trigger.Enabled)
         {
@@ -215,6 +236,12 @@ public sealed class AimmyRuntime
 
         var canTrigger = _config.Aim.ConstantTracking || _hotkeys.IsPressed("Aim Keybind");
         if (!canTrigger)
+        {
+            await _input.ReleaseLeftButtonAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (_config.Trigger.CursorCheck && !TriggerCursorCheck.IsCrosshairInside(detection, frameWidth, frameHeight))
         {
             await _input.ReleaseLeftButtonAsync(cancellationToken).ConfigureAwait(false);
             return;

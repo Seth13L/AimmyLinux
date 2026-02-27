@@ -39,7 +39,7 @@
 | Movement path variants | Yes | Yes | Done |
 | Auto trigger (single click) | Yes | Yes | Done |
 | Spray mode | Yes | Yes | Done |
-| Cursor check | Yes | Partial placeholder | Planned |
+| Cursor check | Yes | Crosshair-in-box trigger gating | Done |
 
 ## Overlay / UI / Hotkeys
 | Area | Windows | Linux v1 | Status |

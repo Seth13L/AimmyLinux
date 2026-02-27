@@ -11,7 +11,8 @@ public static class TargetSelector
         float targetY,
         AimmyConfig config,
         int frameWidth,
-        int frameHeight)
+        int frameHeight,
+        int? fovSizeOverride = null)
     {
         if (detections.Count == 0)
         {
@@ -20,7 +21,7 @@ public static class TargetSelector
 
         var minConfidence = config.Model.ConfidenceThreshold;
         var fovEnabled = config.Fov.Enabled;
-        var fovSize = config.Fov.Size;
+        var fovSize = Math.Max(1, fovSizeOverride ?? config.Fov.Size);
 
         var fovHalf = fovSize / 2f;
         var fovLeft = (frameWidth / 2f) - fovHalf;
