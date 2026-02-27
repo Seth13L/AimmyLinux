@@ -39,6 +39,8 @@ This commit establishes the migration baseline needed for phased feature parity.
   - overlay noop backend
 - `uinput` setup diagnostics with explicit remediation guidance for missing device/permissions.
 - Runtime emergency-stop keybind handling with deterministic shutdown input release.
+- Runtime model-switch keybind hot-swap path with backend/provider diagnostics and sticky-target reset.
+- Sticky aim transition logic for reacquire/switch/drop behavior.
 - Store and updater service scaffolds (GitHub API driven).
 - Deb/RPM packaging script scaffolds.
 - Parity and acceptance docs:

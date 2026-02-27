@@ -262,6 +262,7 @@ var runtime = new AimmyRuntime(
     inputBackend,
     hotkeyBackend,
     overlayBackend,
-    predictor);
+    predictor,
+    InferenceBackendFactory.Create);
 
 return await runtime.RunAsync(cts.Token);

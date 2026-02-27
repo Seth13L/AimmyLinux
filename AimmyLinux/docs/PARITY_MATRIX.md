@@ -34,7 +34,7 @@
 | Area | Windows | Linux v1 | Status |
 |---|---|---|---|
 | Closest target selection | Yes | Yes | Done |
-| Sticky aim | Yes | Baseline | In Progress |
+| Sticky aim | Yes | Reacquire/switch/drop transition logic | Done |
 | Kalman prediction | Yes | Yes | Done |
 | Shalloe prediction | Yes | Yes | Done |
 | WiseTheFox prediction | Yes | Yes | Done |
@@ -42,6 +42,7 @@
 | Auto trigger (single click) | Yes | Yes | Done |
 | Spray mode | Yes | Yes | Done |
 | Cursor check | Yes | Crosshair-in-box trigger gating | Done |
+| Model switch keybind hot-swap | Yes | Runtime hot-swap with provider diagnostics | Done |
 | Data collection + auto-label | Yes | Yes | Done |
 
 ## Overlay / UI / Hotkeys

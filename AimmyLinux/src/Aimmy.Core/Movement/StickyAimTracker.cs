@@ -16,28 +16,64 @@ public static class StickyAimTracker
             return candidate;
         }
 
-        if (candidate is null)
-        {
-            return null;
-        }
-
         if (previous is null)
         {
             return candidate;
         }
 
-        var threshold = config.Aim.StickyAimThreshold;
-        var thresholdSq = threshold * threshold;
-
-        var dx = candidate.Value.CenterX - previous.Value.CenterX;
-        var dy = candidate.Value.CenterY - previous.Value.CenterY;
-        var distanceSq = (dx * dx) + (dy * dy);
-
-        if (distanceSq <= thresholdSq)
+        var nearestToPrevious = FindNearestToPrevious(previous.Value, allCandidates, config);
+        if (nearestToPrevious is not null)
         {
-            return candidate;
+            return nearestToPrevious;
         }
 
-        return previous;
+        return candidate;
+    }
+
+    private static Detection? FindNearestToPrevious(
+        Detection previous,
+        IReadOnlyList<Detection> allCandidates,
+        AimmyConfig config)
+    {
+        if (allCandidates.Count == 0)
+        {
+            return null;
+        }
+
+        var threshold = config.Aim.StickyAimThreshold;
+        var thresholdSq = threshold * threshold;
+        var minimumConfidence = config.Model.ConfidenceThreshold;
+        var targetClass = config.Model.TargetClass;
+
+        Detection? nearest = null;
+        var bestDistanceSq = float.MaxValue;
+
+        foreach (var candidate in allCandidates)
+        {
+            if (candidate.Confidence < minimumConfidence)
+            {
+                continue;
+            }
+
+            if (targetClass != "Best Confidence" &&
+                !string.Equals(targetClass, candidate.ClassName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var dx = candidate.CenterX - previous.CenterX;
+            var dy = candidate.CenterY - previous.CenterY;
+            var distanceSq = (dx * dx) + (dy * dy);
+
+            if (distanceSq > thresholdSq || distanceSq >= bestDistanceSq)
+            {
+                continue;
+            }
+
+            nearest = candidate;
+            bestDistanceSq = distanceSq;
+        }
+
+        return nearest;
     }
 }

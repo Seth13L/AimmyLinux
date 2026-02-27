@@ -95,6 +95,79 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
         Assert.True(input.LastOperationIndex("release") > input.FirstOperationIndex("hold"));
     }
 
+    [Fact]
+    public async Task RunAsync_ModelSwitch_IsEdgeTriggeredAndHotSwapsOnce()
+    {
+        var modelDirectory = Path.Combine(Path.GetTempPath(), "aimmy-runtime-modelswitch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(modelDirectory);
+
+        try
+        {
+            var modelA = Path.Combine(modelDirectory, "model-a.onnx");
+            var modelB = Path.Combine(modelDirectory, "model-b.onnx");
+            await File.WriteAllTextAsync(modelA, "fake-a");
+            await File.WriteAllTextAsync(modelB, "fake-b");
+
+            var config = AimmyConfig.CreateDefault();
+            config.Runtime.Fps = 240;
+            config.Runtime.EnableDiagnosticsAssertions = false;
+            config.Aim.Enabled = false;
+            config.Trigger.Enabled = false;
+            config.Model.ModelPath = modelA;
+            config.Store.LocalModelsDirectory = modelDirectory;
+
+            var detection = new Detection(420f, 320f, 80f, 100f, 0.95f, 0, "enemy");
+            var capture = new StaticCaptureBackend();
+            var initialInference = new TrackingInferenceBackend("initial", new[] { detection });
+            var createdModelPaths = new List<string>();
+            var input = new RecordingInputBackend();
+            var hotkeys = new ScriptedHotkeyBackend((bindingId, queryIndex) => bindingId switch
+            {
+                "Model Switch Keybind" => queryIndex < 3,
+                "Emergency Stop Keybind" => queryIndex >= 4,
+                _ => false
+            });
+            var overlay = new NoopOverlayBackend();
+            var predictor = new PassThroughPredictor();
+
+            IInferenceBackend Factory(AimmyConfig currentConfig)
+            {
+                createdModelPaths.Add(Path.GetFullPath(currentConfig.Model.ModelPath));
+                return new TrackingInferenceBackend("replacement", new[] { detection });
+            }
+
+            var runtime = new AimmyRuntime(
+                config,
+                RuntimeCapabilities.CreateDefault(),
+                capture,
+                initialInference,
+                input,
+                hotkeys,
+                overlay,
+                predictor,
+                Factory);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var exitCode = await runtime.RunAsync(cts.Token);
+
+            Assert.Equal(0, exitCode);
+            Assert.Single(createdModelPaths);
+            Assert.Equal(Path.GetFullPath(modelB), Path.GetFullPath(config.Model.ModelPath));
+            Assert.True(initialInference.Disposed, "Previous inference backend should be disposed after model hot-swap.");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(modelDirectory, recursive: true);
+            }
+            catch
+            {
+                // Ignore cleanup issues on CI runners.
+            }
+        }
+    }
+
     private sealed class StaticCaptureBackend : ICaptureBackend
     {
         public string Name => "test-capture";
@@ -129,6 +202,38 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
 
         public ValueTask DisposeAsync()
         {
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class TrackingInferenceBackend : IInferenceBackend
+    {
+        private readonly IReadOnlyList<Detection> _detections;
+
+        public TrackingInferenceBackend(string name, IReadOnlyList<Detection> detections)
+        {
+            Name = name;
+            _detections = detections;
+        }
+
+        public string Name { get; }
+
+        public bool Disposed { get; private set; }
+
+        public InferenceRuntimeInfo RuntimeInfo { get; } = new(
+            SelectedMode: Aimmy.Core.Enums.GpuExecutionMode.Cpu,
+            Provider: "CPUExecutionProvider",
+            Message: "test",
+            IsFallback: false);
+
+        public IReadOnlyList<Detection> Detect(Image<Rgba32> frame, float minimumConfidence)
+        {
+            return _detections;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
             return ValueTask.CompletedTask;
         }
     }

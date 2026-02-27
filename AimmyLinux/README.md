@@ -94,6 +94,7 @@ Runtime prints capability states at startup (enabled/degraded/unavailable) for:
 - hotkey/overlay readiness
 - store/update services
 - `uinput` setup diagnostics with actionable remediation hints
+- runtime model hot-swap diagnostics (keybind-triggered reload attempts and provider state)
 
 ## Packaging
 

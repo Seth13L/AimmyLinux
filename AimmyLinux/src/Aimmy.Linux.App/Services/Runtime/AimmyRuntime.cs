@@ -16,10 +16,16 @@ namespace Aimmy.Linux.App.Services.Runtime;
 
 public sealed class AimmyRuntime
 {
+    private const string AimKeybindId = "Aim Keybind";
+    private const string SecondaryAimKeybindId = "Second Aim Keybind";
+    private const string DynamicFovKeybindId = "Dynamic FOV Keybind";
+    private const string EmergencyStopKeybindId = "Emergency Stop Keybind";
+    private const string ModelSwitchKeybindId = "Model Switch Keybind";
+
     private readonly AimmyConfig _config;
     private readonly RuntimeCapabilities _capabilities;
     private readonly ICaptureBackend _capture;
-    private readonly IInferenceBackend _inference;
+    private readonly Func<AimmyConfig, IInferenceBackend>? _inferenceFactory;
     private readonly IInputBackend _input;
     private readonly IHotkeyBackend _hotkeys;
     private readonly IOverlayBackend _overlay;
@@ -28,10 +34,14 @@ public sealed class AimmyRuntime
     private readonly RuntimeAssertionThresholds _runtimeThresholds;
     private readonly CaptureGeometry _captureGeometry;
     private readonly RuntimeDataCollector _dataCollector;
+    private readonly Dictionary<string, bool> _hotkeyStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _availableModels = new();
 
+    private IInferenceBackend _inference;
     private Detection? _stickyTarget;
     private DateTime _lastTriggerTime = DateTime.MinValue;
     private int _activeFovSize;
+    private int _activeModelIndex;
 
     public AimmyRuntime(
         AimmyConfig config,
@@ -41,12 +51,14 @@ public sealed class AimmyRuntime
         IInputBackend input,
         IHotkeyBackend hotkeys,
         IOverlayBackend overlay,
-        ITargetPredictor predictor)
+        ITargetPredictor predictor,
+        Func<AimmyConfig, IInferenceBackend>? inferenceFactory = null)
     {
         _config = config;
         _capabilities = capabilities;
         _capture = capture;
         _inference = inference;
+        _inferenceFactory = inferenceFactory;
         _input = input;
         _hotkeys = hotkeys;
         _overlay = overlay;
@@ -58,6 +70,7 @@ public sealed class AimmyRuntime
             config.Runtime.DiagnosticsMaxCaptureP95Ms,
             config.Runtime.DiagnosticsMaxInferenceP95Ms,
             config.Runtime.DiagnosticsMaxLoopP95Ms);
+        RefreshModelCatalog();
     }
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
@@ -90,6 +103,7 @@ public sealed class AimmyRuntime
         Console.WriteLine($"Hotkey backend: {_hotkeys.Name}");
         Console.WriteLine($"Overlay backend: {_overlay.Name}");
         Console.WriteLine($"Inference provider: {_inference.RuntimeInfo.Provider} ({_inference.RuntimeInfo.Message})");
+        Console.WriteLine($"Model switch catalog entries: {_availableModels.Count}");
 
         foreach (var capability in _capabilities.Features.Values.OrderBy(v => v.Name))
         {
@@ -117,15 +131,22 @@ public sealed class AimmyRuntime
         {
             loopStopwatch.Restart();
 
-            if (_hotkeys.IsPressed("Emergency Stop Keybind"))
+            var hotkeys = SnapshotHotkeys();
+
+            if (hotkeys.EmergencyStopEdge)
             {
                 Console.WriteLine("Emergency stop keybind pressed. Stopping runtime.");
                 break;
             }
 
+            if (hotkeys.ModelSwitchEdge)
+            {
+                await TrySwitchModelAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             try
             {
-                await ProcessFrameAsync(region, cancellationToken).ConfigureAwait(false);
+                await ProcessFrameAsync(region, hotkeys, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -171,7 +192,7 @@ public sealed class AimmyRuntime
         return 0;
     }
 
-    private async Task ProcessFrameAsync(CaptureRegion region, CancellationToken cancellationToken)
+    private async Task ProcessFrameAsync(CaptureRegion region, HotkeySnapshot hotkeys, CancellationToken cancellationToken)
     {
         var captureStopwatch = Stopwatch.StartNew();
         using var frame = await _capture.CaptureAsync(region, cancellationToken).ConfigureAwait(false);
@@ -183,7 +204,7 @@ public sealed class AimmyRuntime
         inferenceStopwatch.Stop();
         _diagnostics.AddInferenceMs(inferenceStopwatch.Elapsed.TotalMilliseconds);
 
-        var resolvedFovSize = DynamicFovResolver.Resolve(_config, _hotkeys.IsPressed("Dynamic FOV Keybind"));
+        var resolvedFovSize = DynamicFovResolver.Resolve(_config, hotkeys.DynamicFovPressed);
         var scaledFovSize = Math.Max(1, (int)Math.Round(resolvedFovSize * _captureGeometry.FovScale, MidpointRounding.AwayFromZero));
         if (_config.Fov.Enabled && _config.Fov.ShowFov && resolvedFovSize != _activeFovSize)
         {
@@ -219,12 +240,12 @@ public sealed class AimmyRuntime
 
         var aimVector = AimVectorCalculator.Calculate(predicted, _config, frame.Width, frame.Height);
 
-        if (ShouldMoveAim())
+        if (ShouldMoveAim(hotkeys))
         {
             await _input.MoveRelativeAsync(aimVector.Dx, aimVector.Dy, cancellationToken).ConfigureAwait(false);
         }
 
-        await HandleTriggerAsync(selected.Value, frame.Width, frame.Height, cancellationToken).ConfigureAwait(false);
+        await HandleTriggerAsync(selected.Value, frame.Width, frame.Height, hotkeys, cancellationToken).ConfigureAwait(false);
 
         if (_config.Overlay.ShowDetectedPlayer)
         {
@@ -245,7 +266,7 @@ public sealed class AimmyRuntime
         }
     }
 
-    private bool ShouldMoveAim()
+    private bool ShouldMoveAim(HotkeySnapshot hotkeys)
     {
         if (!_config.Aim.Enabled)
         {
@@ -257,7 +278,7 @@ public sealed class AimmyRuntime
             return true;
         }
 
-        return _hotkeys.IsPressed("Aim Keybind") || _hotkeys.IsPressed("Second Aim Keybind");
+        return hotkeys.AimPressed || hotkeys.SecondaryAimPressed;
     }
 
     private async Task HandleNoTargetAsync(CancellationToken cancellationToken)
@@ -268,7 +289,12 @@ public sealed class AimmyRuntime
         }
     }
 
-    private async Task HandleTriggerAsync(Detection detection, int frameWidth, int frameHeight, CancellationToken cancellationToken)
+    private async Task HandleTriggerAsync(
+        Detection detection,
+        int frameWidth,
+        int frameHeight,
+        HotkeySnapshot hotkeys,
+        CancellationToken cancellationToken)
     {
         if (!_config.Trigger.Enabled)
         {
@@ -280,7 +306,7 @@ public sealed class AimmyRuntime
             return;
         }
 
-        var canTrigger = _config.Aim.ConstantTracking || _hotkeys.IsPressed("Aim Keybind");
+        var canTrigger = _config.Aim.ConstantTracking || hotkeys.AimPressed;
         if (!canTrigger)
         {
             await _input.ReleaseLeftButtonAsync(cancellationToken).ConfigureAwait(false);
@@ -309,6 +335,182 @@ public sealed class AimmyRuntime
         _lastTriggerTime = DateTime.UtcNow;
     }
 
+    private HotkeySnapshot SnapshotHotkeys()
+    {
+        var aimPressed = _hotkeys.IsPressed(AimKeybindId);
+        var secondaryAimPressed = _hotkeys.IsPressed(SecondaryAimKeybindId);
+        var dynamicFovPressed = _hotkeys.IsPressed(DynamicFovKeybindId);
+        var emergencyStopPressed = _hotkeys.IsPressed(EmergencyStopKeybindId);
+        var modelSwitchPressed = _hotkeys.IsPressed(ModelSwitchKeybindId);
+
+        var emergencyStopEdge = IsRisingEdge(EmergencyStopKeybindId, emergencyStopPressed);
+        var modelSwitchEdge = IsRisingEdge(ModelSwitchKeybindId, modelSwitchPressed);
+
+        _hotkeyStates[AimKeybindId] = aimPressed;
+        _hotkeyStates[SecondaryAimKeybindId] = secondaryAimPressed;
+        _hotkeyStates[DynamicFovKeybindId] = dynamicFovPressed;
+        _hotkeyStates[EmergencyStopKeybindId] = emergencyStopPressed;
+        _hotkeyStates[ModelSwitchKeybindId] = modelSwitchPressed;
+
+        return new HotkeySnapshot(
+            aimPressed,
+            secondaryAimPressed,
+            dynamicFovPressed,
+            emergencyStopEdge,
+            modelSwitchEdge);
+    }
+
+    private bool IsRisingEdge(string bindingId, bool currentState)
+    {
+        var previousState = _hotkeyStates.TryGetValue(bindingId, out var existing) && existing;
+        return currentState && !previousState;
+    }
+
+    private async Task TrySwitchModelAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_inferenceFactory is null)
+        {
+            Console.WriteLine("Model switch ignored: inference factory not available.");
+            return;
+        }
+
+        RefreshModelCatalog();
+        if (_availableModels.Count < 2)
+        {
+            Console.WriteLine("Model switch ignored: at least two model files are required in the runtime catalog.");
+            return;
+        }
+
+        var previousModelPath = _config.Model.ModelPath;
+        var currentIndex = _activeModelIndex;
+
+        for (var step = 1; step <= _availableModels.Count; step++)
+        {
+            var nextIndex = (currentIndex + step) % _availableModels.Count;
+            var candidatePath = _availableModels[nextIndex];
+            if (!File.Exists(candidatePath) || string.Equals(candidatePath, previousModelPath, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            try
+            {
+                _config.Model.ModelPath = candidatePath;
+                var replacement = _inferenceFactory(_config);
+                var previousInference = _inference;
+                _inference = replacement;
+                _activeModelIndex = nextIndex;
+                _stickyTarget = null;
+                _predictor.Reset();
+                await previousInference.DisposeAsync().ConfigureAwait(false);
+
+                Console.WriteLine(
+                    $"Model switch success: '{Path.GetFileName(previousModelPath)}' -> '{Path.GetFileName(candidatePath)}' " +
+                    $"provider={replacement.RuntimeInfo.Provider} fallback={replacement.RuntimeInfo.IsFallback}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                _config.Model.ModelPath = previousModelPath;
+                Console.Error.WriteLine($"Model switch failed for '{candidatePath}': {ex.Message}");
+            }
+        }
+
+        Console.WriteLine("Model switch requested but no valid alternate model could be loaded.");
+    }
+
+    private void RefreshModelCatalog()
+    {
+        var absoluteCurrentPath = NormalizePath(_config.Model.ModelPath);
+
+        var discovered = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddModel(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            var normalized = NormalizePath(path);
+            if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+            {
+                return;
+            }
+
+            discovered.Add(normalized);
+        }
+
+        AddModel(absoluteCurrentPath);
+
+        foreach (var searchDirectory in ResolveModelSearchDirectories(absoluteCurrentPath))
+        {
+            if (!Directory.Exists(searchDirectory))
+            {
+                continue;
+            }
+
+            foreach (var modelPath in Directory.EnumerateFiles(searchDirectory, "*.onnx", SearchOption.TopDirectoryOnly)
+                         .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+            {
+                AddModel(modelPath);
+            }
+        }
+
+        _availableModels.Clear();
+        _availableModels.AddRange(discovered);
+
+        _activeModelIndex = _availableModels.FindIndex(path => string.Equals(path, absoluteCurrentPath, StringComparison.OrdinalIgnoreCase));
+        if (_activeModelIndex < 0)
+        {
+            _activeModelIndex = 0;
+        }
+    }
+
+    private IEnumerable<string> ResolveModelSearchDirectories(string absoluteCurrentPath)
+    {
+        var searchDirectories = new List<string>();
+
+        var currentModelDirectory = Path.GetDirectoryName(absoluteCurrentPath);
+        if (!string.IsNullOrWhiteSpace(currentModelDirectory))
+        {
+            searchDirectories.Add(currentModelDirectory);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_config.Store.LocalModelsDirectory))
+        {
+            searchDirectories.Add(_config.Store.LocalModelsDirectory);
+            searchDirectories.Add(Path.Combine(Environment.CurrentDirectory, _config.Store.LocalModelsDirectory));
+            searchDirectories.Add(Path.Combine(AppContext.BaseDirectory, _config.Store.LocalModelsDirectory));
+        }
+
+        return searchDirectories
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(NormalizePath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch
+        {
+            return path;
+        }
+    }
+
     private async Task ShutdownAsync(CancellationToken cancellationToken)
     {
         try
@@ -326,4 +528,11 @@ public sealed class AimmyRuntime
         await _hotkeys.DisposeAsync().ConfigureAwait(false);
         await _inference.DisposeAsync().ConfigureAwait(false);
     }
+
+    private readonly record struct HotkeySnapshot(
+        bool AimPressed,
+        bool SecondaryAimPressed,
+        bool DynamicFovPressed,
+        bool EmergencyStopEdge,
+        bool ModelSwitchEdge);
 }
