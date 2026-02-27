@@ -43,9 +43,13 @@ jobs:
             x11-utils
 
       - name: Restore and build
+        shell: bash
         run: |
+          set -euo pipefail
+          mkdir -p "$TEST_RESULTS_DIR"
           dotnet restore AimmyLinux/AimmyLinux.sln
-          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore
+          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore \
+            | tee "$TEST_RESULTS_DIR/dotnet-build.log"
 
       - name: Run tests under Xvfb
         shell: bash
@@ -55,6 +59,13 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 >"$XVFB_LOG" 2>&1 &
           XVFB_PID=$!
           trap 'kill $XVFB_PID || true' EXIT
+          for _ in {1..50}; do
+            if xdpyinfo -display :99 >/dev/null 2>&1; then
+              break
+            fi
+            sleep 0.1
+          done
+          xdpyinfo -display :99 >/dev/null 2>&1
           export DISPLAY=:99
           export RUN_LINUX_X11_INTEGRATION=1
           dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
@@ -92,12 +103,17 @@ jobs:
             curl \
             findutils \
             git \
+            glibc-locale-source \
             libX11 \
+            libicu \
+            libstdc++ \
+            openssl-libs \
             procps-ng \
             python3 \
             python3-tkinter \
             which \
-            xorg-x11-server-Xvfb
+            xorg-x11-server-Xvfb \
+            zlib
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,9 +124,14 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore and build
+        shell: bash
         run: |
-          dotnet restore AimmyLinux/AimmyLinux.sln
-          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore
+          set -euo pipefail
+          mkdir -p "$TEST_RESULTS_DIR"
+          dotnet restore AimmyLinux/AimmyLinux.sln \
+            | tee "$TEST_RESULTS_DIR/dotnet-restore.log"
+          dotnet build AimmyLinux/AimmyLinux.sln -c Release --no-restore \
+            | tee "$TEST_RESULTS_DIR/dotnet-build.log"
 
       - name: Run tests under Xvfb
         shell: bash
@@ -120,6 +141,13 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 >"$XVFB_LOG" 2>&1 &
           XVFB_PID=$!
           trap 'kill $XVFB_PID || true' EXIT
+          for _ in {1..50}; do
+            if xdpyinfo -display :99 >/dev/null 2>&1; then
+              break
+            fi
+            sleep 0.1
+          done
+          xdpyinfo -display :99 >/dev/null 2>&1
           export DISPLAY=:99
           export RUN_LINUX_X11_INTEGRATION=1
           dotnet test AimmyLinux/tests/Aimmy.Core.Tests/Aimmy.Core.Tests.csproj \
