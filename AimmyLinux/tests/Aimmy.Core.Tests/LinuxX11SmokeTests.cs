@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Aimmy.Core.Tests;
 
+[Collection("LinuxX11Integration")]
 public sealed class LinuxX11SmokeTests
 {
     [Fact]
