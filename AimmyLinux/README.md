@@ -6,7 +6,7 @@ This folder now contains a layered Linux port architecture for Aimmy V2:
 - `src/Aimmy.Platform.Abstractions`: backend interfaces and shared runtime models
 - `src/Aimmy.Platform.Linux.X11`: Linux/X11 runtime backends and legacy `.cfg` migrator
 - `src/Aimmy.Inference.OnnxRuntime`: ONNX Runtime backend with runtime GPU provider selection
-- `src/Aimmy.UI.Avalonia`: Avalonia UI scaffold for parity work
+- `src/Aimmy.UI.Avalonia`: Avalonia configuration editor UI
 - `src/Aimmy.Linux.App`: app composition and runtime loop
 
 Current implementation is an executable migration baseline for phased parity delivery.
@@ -67,6 +67,7 @@ dotnet run -c Release -- --check-update --current-version 3.0.0
 dotnet run -c Release -- --list-displays
 dotnet run -c Release -- --select-display DP-1 --save-config
 dotnet run -c Release -- --use-primary-display --save-config
+dotnet run -c Release -- --ui-config
 dotnet run -c Release -- --save-config
 ```
 
@@ -104,4 +105,4 @@ Initial package scripts:
 - Native X11 capture is implemented; SHM-specific optimization is pending.
 - Linux overlay uses a Python/tkinter renderer and may vary across desktop stacks.
 - X11 global hotkeys require `libX11`; fallback hotkeys are used when unavailable.
-- Avalonia is scaffolded; parity UI work is pending.
+- Avalonia currently exposes configuration editing for display/data-collection sections; full menu-by-menu parity is still pending.

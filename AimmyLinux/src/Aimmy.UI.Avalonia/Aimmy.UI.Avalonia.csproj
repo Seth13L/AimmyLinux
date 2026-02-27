@@ -4,11 +4,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Aimmy.Core\Aimmy.Core.csproj" />
     <ProjectReference Include="..\Aimmy.Platform.Abstractions\Aimmy.Platform.Abstractions.csproj" />
     <PackageReference Include="Avalonia" Version="11.3.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
   </ItemGroup>
 </Project>

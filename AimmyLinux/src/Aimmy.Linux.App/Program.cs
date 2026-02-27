@@ -13,6 +13,7 @@ using Aimmy.Platform.Linux.X11.Input;
 using Aimmy.Platform.Linux.X11.Overlay;
 using Aimmy.Platform.Linux.X11.Runtime;
 using Aimmy.Platform.Linux.X11.Util;
+using Aimmy.UI.Avalonia;
 
 static Dictionary<string, string> ParseArgs(string[] args)
 {
@@ -206,6 +207,26 @@ if (parsedArgs.ContainsKey("list-model-store"))
     }
 
     return 0;
+}
+
+if (parsedArgs.ContainsKey("ui-config"))
+{
+    var displays = await displayDiscoveryService.DiscoverAsync(CancellationToken.None);
+
+    try
+    {
+        return ConfigurationEditorLauncher.Run(
+            config,
+            displays,
+            configPath,
+            updatedConfig => configService.Save(configPath, updatedConfig),
+            Array.Empty<string>());
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Unable to launch configuration editor: {ex.Message}");
+        return 1;
+    }
 }
 
 if (string.IsNullOrWhiteSpace(config.Model.ModelPath) || !File.Exists(config.Model.ModelPath))
