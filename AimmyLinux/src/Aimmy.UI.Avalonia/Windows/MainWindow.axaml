@@ -18,11 +18,34 @@
     </Border>
 
     <TabControl Grid.Row="1" Margin="16,8,16,8">
-      <TabItem Header="Display">
+      <TabItem Header="Capabilities">
+        <ScrollViewer>
+          <StackPanel Spacing="8" Margin="0,8,0,0">
+            <TextBlock Text="Runtime capability badges. Degraded/unavailable states are explicit and section controls are disabled when unsupported." TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding RuntimeStatus.Capabilities}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                    <StackPanel Spacing="4">
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                      <TextBlock Text="{Binding State}" />
+                      <TextBlock Text="{Binding IsDegraded, StringFormat='Degraded: {0}'}" />
+                      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Display" IsEnabled="{Binding DisplaySectionEnabled}">
         <ScrollViewer>
           <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
             <StackPanel Spacing="12">
               <TextBlock FontSize="16" FontWeight="SemiBold" Text="Display Selection (X11)" />
+              <TextBlock Text="{Binding DisplaySectionNotice}" TextWrapping="Wrap" />
               <CheckBox x:Name="UseDiscoveredDisplayCheckBox"
                         Content="Use discovered display geometry"
                         IsChecked="{Binding DisplaySelection.UseDiscoveredDisplay, Mode=TwoWay}"
@@ -71,9 +94,10 @@
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header="Input + Runtime">
+      <TabItem Header="Input + Runtime" IsEnabled="{Binding InputSectionEnabled}">
         <ScrollViewer>
           <StackPanel Spacing="16" Margin="0,8,0,0">
+            <TextBlock Text="{Binding InputSectionNotice}" TextWrapping="Wrap" />
             <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
               <StackPanel Spacing="12">
                 <TextBlock FontSize="16" FontWeight="SemiBold" Text="Input / Keybinds" />
@@ -254,9 +278,10 @@
               </StackPanel>
             </Border>
 
-            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" IsEnabled="{Binding OverlaySectionEnabled}">
               <StackPanel Spacing="12">
                 <TextBlock FontSize="16" FontWeight="SemiBold" Text="Overlay" />
+                <TextBlock Text="{Binding OverlaySectionNotice}" TextWrapping="Wrap" />
                 <CheckBox Content="Show Detected Player" IsChecked="{Binding OverlaySettings.ShowDetectedPlayer, Mode=TwoWay}" />
                 <CheckBox Content="Show Confidence" IsChecked="{Binding OverlaySettings.ShowConfidence, Mode=TwoWay}" />
                 <CheckBox Content="Show Tracers" IsChecked="{Binding OverlaySettings.ShowTracers, Mode=TwoWay}" />

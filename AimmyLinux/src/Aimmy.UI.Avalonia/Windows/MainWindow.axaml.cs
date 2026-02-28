@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Aimmy.Core.Capabilities;
 using Aimmy.Core.Config;
 using Aimmy.Platform.Abstractions.Models;
 using Aimmy.UI.Avalonia.ViewModels;
@@ -28,7 +29,7 @@ public partial class MainWindow : Window
         _config = launchOptions.Config;
         _saveConfigCallback = launchOptions.SaveConfigCallback;
         _viewModel = new ConfigurationEditorViewModel();
-        _viewModel.Load(_config, launchOptions.Displays);
+        _viewModel.Load(_config, launchOptions.Displays, launchOptions.RuntimeCapabilities);
 
         InitializeComponent();
         DataContext = _viewModel;
@@ -54,6 +55,7 @@ public partial class MainWindow : Window
         {
             Config = AimmyConfig.CreateDefault(),
             Displays = Array.Empty<DisplayInfo>(),
+            RuntimeCapabilities = RuntimeCapabilities.CreateDefault(),
             ConfigPath = "(design-time)",
             SaveConfigCallback = _ => { }
         };

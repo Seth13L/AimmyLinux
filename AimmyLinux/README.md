@@ -108,4 +108,4 @@ Initial package scripts:
 - Native X11 capture is implemented; SHM-specific optimization is pending.
 - Linux overlay uses a Python/tkinter renderer and may vary across desktop stacks.
 - X11 global hotkeys use X11 key/button grabs with polling fallback semantics.
-- Avalonia currently exposes tabbed editing for display/input/runtime/aim/prediction/trigger/FOV/overlay/data sections; full menu-by-menu parity is still pending.
+- Avalonia currently exposes tabbed editing for display/input/runtime/aim/prediction/trigger/FOV/overlay/data plus capability badges with unavailable-section gating; full menu-by-menu parity is still pending.

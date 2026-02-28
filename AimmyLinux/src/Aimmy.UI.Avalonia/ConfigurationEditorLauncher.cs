@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Aimmy.Core.Capabilities;
 using Aimmy.Core.Config;
 using Aimmy.Platform.Abstractions.Models;
 
@@ -13,12 +14,14 @@ public static class ConfigurationEditorLauncher
     public static int Run(
         AimmyConfig config,
         IReadOnlyList<DisplayInfo> displays,
+        RuntimeCapabilities runtimeCapabilities,
         string configPath,
         Action<AimmyConfig> saveConfigCallback,
         string[]? args = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(displays);
+        ArgumentNullException.ThrowIfNull(runtimeCapabilities);
         ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
         ArgumentNullException.ThrowIfNull(saveConfigCallback);
 
@@ -33,6 +36,7 @@ public static class ConfigurationEditorLauncher
             {
                 Config = config,
                 Displays = displays,
+                RuntimeCapabilities = runtimeCapabilities,
                 ConfigPath = configPath,
                 SaveConfigCallback = saveConfigCallback
             };

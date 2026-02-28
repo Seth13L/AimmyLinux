@@ -42,6 +42,7 @@ This commit establishes the migration baseline needed for phased feature parity.
 - Runtime model-switch keybind hot-swap path with backend/provider diagnostics and sticky-target reset.
 - Sticky aim transition logic for reacquire/switch/drop behavior.
 - Avalonia tabbed configuration editor expanded to cover input/runtime/aim/prediction/trigger/FOV/overlay/data sections.
+- Capability badges are now surfaced in Avalonia, and unsupported sections are explicitly disabled with messages.
 - Store and updater service scaffolds (GitHub API driven).
 - Deb/RPM packaging script scaffolds.
 - Parity and acceptance docs:

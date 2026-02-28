@@ -1,3 +1,4 @@
+using Aimmy.Core.Capabilities;
 using Aimmy.Core.Config;
 using Aimmy.Core.Enums;
 using Aimmy.Platform.Abstractions.Models;
@@ -132,5 +133,31 @@ public sealed class ConfigurationEditorViewModelTests
         Assert.True(config.DataCollection.AutoLabelData);
         Assert.Equal("session/images", config.DataCollection.ImagesDirectory);
         Assert.Equal("session/labels", config.DataCollection.LabelsDirectory);
+    }
+
+    [Fact]
+    public void Load_AppliesCapabilityBadgesAndSectionAvailabilityFlags()
+    {
+        var config = AimmyConfig.CreateDefault();
+        var vm = new ConfigurationEditorViewModel();
+        var capabilities = RuntimeCapabilities.CreateDefault();
+        capabilities.Set("X11Session", FeatureState.Enabled, false, "X11 session detected.");
+        capabilities.Set("CaptureBackend", FeatureState.Unavailable, true, "No capture backend.");
+        capabilities.Set("InputBackend", FeatureState.Unavailable, true, "No input backend.");
+        capabilities.Set("Overlay", FeatureState.Enabled, true, "Overlay degraded.");
+
+        vm.Load(config, Array.Empty<DisplayInfo>(), capabilities);
+
+        Assert.False(vm.DisplaySectionEnabled);
+        Assert.False(vm.InputSectionEnabled);
+        Assert.True(vm.OverlaySectionEnabled);
+        Assert.Contains("No capture backend", vm.DisplaySectionNotice, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No input backend", vm.InputSectionNotice, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Overlay degraded", vm.OverlaySectionNotice, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(vm.RuntimeStatus.Capabilities);
+        Assert.Contains(vm.RuntimeStatus.Capabilities, badge =>
+            string.Equals(badge.Name, "Overlay", StringComparison.OrdinalIgnoreCase) &&
+            badge.State == FeatureState.Enabled &&
+            badge.IsDegraded);
     }
 }

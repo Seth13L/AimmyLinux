@@ -212,12 +212,16 @@ if (parsedArgs.ContainsKey("list-model-store"))
 if (parsedArgs.ContainsKey("ui-config"))
 {
     var displays = await displayDiscoveryService.DiscoverAsync(CancellationToken.None);
+    var uiEnvironmentVariableReader = new Func<string, string?>(Environment.GetEnvironmentVariable);
+    var uiCapabilityProbe = new LinuxRuntimeCapabilityProbe(commandRunner, uiEnvironmentVariableReader);
+    var uiCapabilities = uiCapabilityProbe.Probe();
 
     try
     {
         return ConfigurationEditorLauncher.Run(
             config,
             displays,
+            uiCapabilities,
             configPath,
             updatedConfig => configService.Save(configPath, updatedConfig),
             Array.Empty<string>());
