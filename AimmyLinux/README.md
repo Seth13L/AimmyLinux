@@ -98,14 +98,32 @@ Runtime prints capability states at startup (enabled/degraded/unavailable) for:
 
 ## Packaging
 
-Initial package scripts:
+Package build scripts:
 
 - Deb: `packaging/deb/build-deb.sh`
 - RPM: `packaging/rpm/build-rpm.sh`
+
+Both scripts now stage the app into `/opt/aimmylinux`, install `/usr/bin/aimmylinux` launcher, and add a desktop entry at `/usr/share/applications/aimmylinux.desktop`.
+
+Run:
+
+```bash
+cd AimmyLinux
+./packaging/deb/build-deb.sh 0.1.0
+./packaging/rpm/build-rpm.sh 0.1.0
+```
+
+Updater behavior is `check+guide` only:
+
+- `deb` guidance uses `sudo apt install ./<package>.deb`
+- `rpm` guidance uses `sudo dnf install ./<package>.rpm`
+
+See `docs/PACKAGING_GUIDE.md` for install/update notes and post-install permissions guidance.
 
 ## Limits in This Commit
 
 - Native X11 capture is implemented; SHM-specific optimization is pending.
 - Linux overlay uses a Python/tkinter renderer and may vary across desktop stacks.
 - X11 global hotkeys use X11 key/button grabs with polling fallback semantics.
-- Avalonia currently exposes tabbed editing for display/input/runtime/aim/prediction/trigger/FOV/overlay/data plus capability badges with unavailable-section gating; full menu-by-menu parity is still pending.
+- Avalonia currently exposes a live runtime shell (start/stop/apply + snapshot status) and tabbed editing for model/display/input/runtime/aim/prediction/trigger/FOV/overlay/store/update/data. Full menu-by-menu parity is still pending.
+- StreamGuard-equivalent behavior is explicitly unsupported on Linux v1.

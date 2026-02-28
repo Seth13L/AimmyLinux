@@ -59,6 +59,7 @@ public sealed class LegacyCfgMigrator : IConfigMigrator
             migratedConfig.Input.DynamicFovKeybind = GetString(root, "Dynamic FOV Keybind", migratedConfig.Input.DynamicFovKeybind);
             migratedConfig.Input.EmergencyStopKeybind = GetString(root, "Emergency Stop Keybind", migratedConfig.Input.EmergencyStopKeybind);
             migratedConfig.Input.ModelSwitchKeybind = GetString(root, "Model Switch Keybind", migratedConfig.Input.ModelSwitchKeybind);
+            migratedConfig.Input.EnableModelSwitchKeybind = GetBool(root, "Enable Model Switch Keybind", migratedConfig.Input.EnableModelSwitchKeybind);
 
             migratedConfig.Aim.Enabled = GetBool(root, "Aim Assist", migratedConfig.Aim.Enabled);
             migratedConfig.Aim.ConstantTracking = GetBool(root, "Constant AI Tracking", migratedConfig.Aim.ConstantTracking);
@@ -103,6 +104,10 @@ public sealed class LegacyCfgMigrator : IConfigMigrator
             migratedConfig.Overlay.ShowTracers = GetBool(root, "Show Tracers", migratedConfig.Overlay.ShowTracers);
             migratedConfig.Overlay.TracerPosition = GetString(root, "Tracer Position", migratedConfig.Overlay.TracerPosition);
             migratedConfig.Overlay.Opacity = GetDouble(root, "Opacity", migratedConfig.Overlay.Opacity);
+            migratedConfig.Overlay.DetectedPlayerColor = GetString(root, "Detected Player Color", migratedConfig.Overlay.DetectedPlayerColor);
+            migratedConfig.Overlay.ConfidenceFontSize = GetInt(root, "AI Confidence Font Size", migratedConfig.Overlay.ConfidenceFontSize);
+            migratedConfig.Overlay.BorderThickness = GetDouble(root, "Border Thickness", migratedConfig.Overlay.BorderThickness);
+            migratedConfig.Overlay.CornerRadius = GetInt(root, "Corner Radius", migratedConfig.Overlay.CornerRadius);
 
             migratedConfig.DataCollection.CollectDataWhilePlaying = GetBool(root, "Collect Data While Playing", migratedConfig.DataCollection.CollectDataWhilePlaying);
             migratedConfig.DataCollection.AutoLabelData = GetBool(root, "Auto Label Data", migratedConfig.DataCollection.AutoLabelData);
@@ -110,6 +115,8 @@ public sealed class LegacyCfgMigrator : IConfigMigrator
             migratedConfig.Runtime.DebugMode = GetBool(root, "Debug Mode", migratedConfig.Runtime.DebugMode);
             migratedConfig.Runtime.DryRun = GetBool(root, "DryRun", migratedConfig.Runtime.DryRun);
             migratedConfig.Runtime.Fps = GetInt(root, "Fps", migratedConfig.Runtime.Fps);
+            migratedConfig.Runtime.UiTopMost = GetBool(root, "UI TopMost", migratedConfig.Runtime.UiTopMost);
+            migratedConfig.Runtime.StreamGuardEnabled = GetBool(root, "StreamGuard", migratedConfig.Runtime.StreamGuardEnabled);
 
             migratedConfig.Normalize();
             message = "Migrated legacy cfg format into typed AimmyConfig.";

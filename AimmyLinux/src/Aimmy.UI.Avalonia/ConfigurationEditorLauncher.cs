@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Aimmy.Core.Capabilities;
 using Aimmy.Core.Config;
+using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Abstractions.Models;
 
 namespace Aimmy.UI.Avalonia;
@@ -17,6 +18,11 @@ public static class ConfigurationEditorLauncher
         RuntimeCapabilities runtimeCapabilities,
         string configPath,
         Action<AimmyConfig> saveConfigCallback,
+        IModelStoreClient? modelStoreClient = null,
+        IUpdateService? updateService = null,
+        IRuntimeHostService? runtimeHostService = null,
+        IModelMetadataReader? modelMetadataReader = null,
+        string currentVersion = "0.0.0",
         string[]? args = null)
     {
         ArgumentNullException.ThrowIfNull(config);
@@ -38,7 +44,12 @@ public static class ConfigurationEditorLauncher
                 Displays = displays,
                 RuntimeCapabilities = runtimeCapabilities,
                 ConfigPath = configPath,
-                SaveConfigCallback = saveConfigCallback
+                SaveConfigCallback = saveConfigCallback,
+                ModelStoreClient = modelStoreClient,
+                UpdateService = updateService,
+                RuntimeHostService = runtimeHostService,
+                ModelMetadataReader = modelMetadataReader,
+                CurrentVersion = currentVersion
             };
         }
 

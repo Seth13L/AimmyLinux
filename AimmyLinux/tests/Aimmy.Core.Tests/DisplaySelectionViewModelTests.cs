@@ -1,4 +1,5 @@
 using Aimmy.Core.Config;
+using Aimmy.Core.Enums;
 using Aimmy.Platform.Abstractions.Models;
 using Aimmy.UI.Avalonia.ViewModels;
 using Xunit;
@@ -78,5 +79,24 @@ public sealed class DisplaySelectionViewModelTests
         Assert.Equal(0, config.Capture.DisplayOffsetY);
         Assert.Equal(1.5, config.Capture.DpiScaleX, 3);
         Assert.Equal(1.5, config.Capture.DpiScaleY, 3);
+    }
+
+    [Fact]
+    public void Apply_UpdatesCaptureMethodAndExternalPreference()
+    {
+        var config = AimmyConfig.CreateDefault();
+        var vm = new DisplaySelectionViewModel
+        {
+            UseDiscoveredDisplay = false,
+            DisplayWidth = 1920,
+            DisplayHeight = 1080,
+            CaptureMethod = CaptureMethod.X11Shm.ToString(),
+            ExternalBackendPreference = "maim"
+        };
+
+        vm.Apply(config);
+
+        Assert.Equal(CaptureMethod.X11Shm, config.Capture.Method);
+        Assert.Equal("maim", config.Capture.ExternalBackendPreference);
     }
 }

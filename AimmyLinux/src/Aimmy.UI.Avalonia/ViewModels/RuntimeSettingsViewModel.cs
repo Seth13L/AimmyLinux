@@ -16,6 +16,8 @@ public sealed class RuntimeSettingsViewModel
     public int DiagnosticsMaxCaptureP95Ms { get; set; }
     public int DiagnosticsMaxInferenceP95Ms { get; set; }
     public int DiagnosticsMaxLoopP95Ms { get; set; }
+    public bool UiTopMost { get; set; }
+    public bool StreamGuardEnabled { get; set; }
 
     public void Load(AimmyConfig config)
     {
@@ -28,6 +30,8 @@ public sealed class RuntimeSettingsViewModel
         DiagnosticsMaxCaptureP95Ms = config.Runtime.DiagnosticsMaxCaptureP95Ms;
         DiagnosticsMaxInferenceP95Ms = config.Runtime.DiagnosticsMaxInferenceP95Ms;
         DiagnosticsMaxLoopP95Ms = config.Runtime.DiagnosticsMaxLoopP95Ms;
+        UiTopMost = config.Runtime.UiTopMost;
+        StreamGuardEnabled = config.Runtime.StreamGuardEnabled;
     }
 
     public void Apply(AimmyConfig config)
@@ -45,5 +49,7 @@ public sealed class RuntimeSettingsViewModel
         config.Runtime.DiagnosticsMaxCaptureP95Ms = DiagnosticsMaxCaptureP95Ms;
         config.Runtime.DiagnosticsMaxInferenceP95Ms = DiagnosticsMaxInferenceP95Ms;
         config.Runtime.DiagnosticsMaxLoopP95Ms = DiagnosticsMaxLoopP95Ms;
+        config.Runtime.UiTopMost = UiTopMost;
+        config.Runtime.StreamGuardEnabled = StreamGuardEnabled;
     }
 }

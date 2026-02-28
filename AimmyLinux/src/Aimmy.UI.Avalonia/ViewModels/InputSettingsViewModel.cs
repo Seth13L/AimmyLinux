@@ -13,6 +13,7 @@ public sealed class InputSettingsViewModel
     public string DynamicFovKeybind { get; set; } = string.Empty;
     public string EmergencyStopKeybind { get; set; } = string.Empty;
     public string ModelSwitchKeybind { get; set; } = string.Empty;
+    public bool EnableModelSwitchKeybind { get; set; }
 
     public void Load(AimmyConfig config)
     {
@@ -22,6 +23,7 @@ public sealed class InputSettingsViewModel
         DynamicFovKeybind = config.Input.DynamicFovKeybind;
         EmergencyStopKeybind = config.Input.EmergencyStopKeybind;
         ModelSwitchKeybind = config.Input.ModelSwitchKeybind;
+        EnableModelSwitchKeybind = config.Input.EnableModelSwitchKeybind;
     }
 
     public void Apply(AimmyConfig config)
@@ -36,5 +38,6 @@ public sealed class InputSettingsViewModel
         config.Input.DynamicFovKeybind = DynamicFovKeybind;
         config.Input.EmergencyStopKeybind = EmergencyStopKeybind;
         config.Input.ModelSwitchKeybind = ModelSwitchKeybind;
+        config.Input.EnableModelSwitchKeybind = EnableModelSwitchKeybind;
     }
 }

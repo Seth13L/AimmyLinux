@@ -40,6 +40,7 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
             RuntimeCapabilities.CreateDefault(),
             capture,
             inference,
+            null,
             input,
             hotkeys,
             overlay,
@@ -79,6 +80,7 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
             RuntimeCapabilities.CreateDefault(),
             capture,
             inference,
+            null,
             input,
             hotkeys,
             overlay,
@@ -141,6 +143,7 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
                 RuntimeCapabilities.CreateDefault(),
                 capture,
                 initialInference,
+                null,
                 input,
                 hotkeys,
                 overlay,
@@ -166,6 +169,167 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
                 // Ignore cleanup issues on CI runners.
             }
         }
+    }
+
+    [Fact]
+    public async Task RunAsync_ModelSwitch_DoesNotSwapWhenDisabled()
+    {
+        var modelDirectory = Path.Combine(Path.GetTempPath(), "aimmy-runtime-modelswitch-disabled-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(modelDirectory);
+
+        try
+        {
+            var modelA = Path.Combine(modelDirectory, "model-a.onnx");
+            var modelB = Path.Combine(modelDirectory, "model-b.onnx");
+            await File.WriteAllTextAsync(modelA, "fake-a");
+            await File.WriteAllTextAsync(modelB, "fake-b");
+
+            var config = AimmyConfig.CreateDefault();
+            config.Runtime.Fps = 240;
+            config.Runtime.EnableDiagnosticsAssertions = false;
+            config.Aim.Enabled = false;
+            config.Trigger.Enabled = false;
+            config.Model.ModelPath = modelA;
+            config.Store.LocalModelsDirectory = modelDirectory;
+            config.Input.EnableModelSwitchKeybind = false;
+
+            var detection = new Detection(420f, 320f, 80f, 100f, 0.95f, 0, "enemy");
+            var capture = new StaticCaptureBackend();
+            var initialInference = new TrackingInferenceBackend("initial", new[] { detection });
+            var createdModelPaths = new List<string>();
+            var input = new RecordingInputBackend();
+            var hotkeys = new ScriptedHotkeyBackend((bindingId, queryIndex) => bindingId switch
+            {
+                "Model Switch Keybind" => queryIndex < 3,
+                "Emergency Stop Keybind" => queryIndex >= 4,
+                _ => false
+            });
+            var overlay = new NoopOverlayBackend();
+            var predictor = new PassThroughPredictor();
+
+            IInferenceBackend Factory(AimmyConfig currentConfig)
+            {
+                createdModelPaths.Add(currentConfig.Model.ModelPath);
+                return new TrackingInferenceBackend("replacement", new[] { detection });
+            }
+
+            var runtime = new AimmyRuntime(
+                config,
+                RuntimeCapabilities.CreateDefault(),
+                capture,
+                initialInference,
+                null,
+                input,
+                hotkeys,
+                overlay,
+                predictor,
+                Factory);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var exitCode = await runtime.RunAsync(cts.Token);
+
+            Assert.Equal(0, exitCode);
+            Assert.Empty(createdModelPaths);
+            Assert.Equal(Path.GetFullPath(modelA), Path.GetFullPath(config.Model.ModelPath));
+            Assert.True(initialInference.Disposed);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(modelDirectory, recursive: true);
+            }
+            catch
+            {
+                // Ignore cleanup issues on CI runners.
+            }
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_CursorCheck_UsesCursorPositionInsteadOfCrosshair()
+    {
+        var config = AimmyConfig.CreateDefault();
+        config.Runtime.Fps = 240;
+        config.Runtime.EnableDiagnosticsAssertions = false;
+        config.Aim.Enabled = true;
+        config.Aim.ConstantTracking = true;
+        config.Trigger.Enabled = true;
+        config.Trigger.SprayMode = false;
+        config.Trigger.CursorCheck = true;
+        config.Trigger.AutoTriggerDelaySeconds = 0.01;
+
+        var detection = new Detection(320f, 320f, 80f, 80f, 0.95f, 0, "enemy");
+        var capture = new StaticCaptureBackend();
+        var inference = new StaticInferenceBackend(new[] { detection });
+        var input = new RecordingInputBackend();
+        var hotkeys = new ScriptedHotkeyBackend((bindingId, queryIndex) => bindingId switch
+        {
+            "Emergency Stop Keybind" => queryIndex >= 4,
+            _ => false
+        });
+        var overlay = new NoopOverlayBackend();
+        var predictor = new PassThroughPredictor();
+        var cursor = new FixedCursorProvider(50, 50);
+        var runtime = new AimmyRuntime(
+            config,
+            RuntimeCapabilities.CreateDefault(),
+            capture,
+            inference,
+            cursor,
+            input,
+            hotkeys,
+            overlay,
+            predictor);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var exitCode = await runtime.RunAsync(cts.Token);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(0, input.ClickCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_CursorCheck_TriggersWhenCursorInsideDetection()
+    {
+        var config = AimmyConfig.CreateDefault();
+        config.Runtime.Fps = 240;
+        config.Runtime.EnableDiagnosticsAssertions = false;
+        config.Aim.Enabled = true;
+        config.Aim.ConstantTracking = true;
+        config.Trigger.Enabled = true;
+        config.Trigger.SprayMode = false;
+        config.Trigger.CursorCheck = true;
+        config.Trigger.AutoTriggerDelaySeconds = 0.01;
+
+        var detection = new Detection(320f, 320f, 80f, 80f, 0.95f, 0, "enemy");
+        var capture = new StaticCaptureBackend();
+        var inference = new StaticInferenceBackend(new[] { detection });
+        var input = new RecordingInputBackend();
+        var hotkeys = new ScriptedHotkeyBackend((bindingId, queryIndex) => bindingId switch
+        {
+            "Emergency Stop Keybind" => queryIndex >= 4,
+            _ => false
+        });
+        var overlay = new NoopOverlayBackend();
+        var predictor = new PassThroughPredictor();
+        var cursor = new FixedCursorProvider(960, 540);
+        var runtime = new AimmyRuntime(
+            config,
+            RuntimeCapabilities.CreateDefault(),
+            capture,
+            inference,
+            cursor,
+            input,
+            hotkeys,
+            overlay,
+            predictor);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var exitCode = await runtime.RunAsync(cts.Token);
+
+        Assert.Equal(0, exitCode);
+        Assert.True(input.ClickCount >= 1);
     }
 
     private sealed class StaticCaptureBackend : ICaptureBackend
@@ -243,6 +407,7 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
         private readonly List<string> _operations = new();
 
         public int MoveCount { get; private set; }
+        public int ClickCount { get; private set; }
         public int HoldCount { get; private set; }
         public int ReleaseCount { get; private set; }
         public IReadOnlyList<string> Operations => _operations;
@@ -268,6 +433,7 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
 
         public Task ClickAsync(CancellationToken cancellationToken)
         {
+            ClickCount++;
             _operations.Add("click");
             return Task.CompletedTask;
         }
@@ -314,6 +480,25 @@ public sealed class AimmyRuntimeHotkeyBehaviorTests
         public ValueTask DisposeAsync()
         {
             return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class FixedCursorProvider : ICursorProvider
+    {
+        private readonly int _x;
+        private readonly int _y;
+
+        public FixedCursorProvider(int x, int y)
+        {
+            _x = x;
+            _y = y;
+        }
+
+        public bool TryGetPosition(out int screenX, out int screenY)
+        {
+            screenX = _x;
+            screenY = _y;
+            return true;
         }
     }
 

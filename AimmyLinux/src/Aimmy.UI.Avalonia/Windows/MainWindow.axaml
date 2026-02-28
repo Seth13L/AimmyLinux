@@ -40,6 +40,53 @@
         </ScrollViewer>
       </TabItem>
 
+      <TabItem Header="Runtime">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Margin="0,8,0,0">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Live Runtime Control" />
+                <TextBlock Text="{Binding RuntimeStatus.StatusMessage}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding RuntimeStatus.IsRunning, StringFormat='Running: {0}'}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Width="140" Content="Start Runtime" Click="OnStartRuntimeClicked" />
+                  <Button Width="140" Content="Apply + Restart" Click="OnApplyRuntimeClicked" />
+                  <Button Width="140" Content="Stop Runtime" Click="OnStopRuntimeClicked" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="8">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Runtime Snapshot" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                  <TextBlock Grid.Row="0" Text="Capture backend" />
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeStatus.CaptureBackend}" />
+                  <TextBlock Grid.Row="1" Text="Input backend" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RuntimeStatus.InputBackend}" />
+                  <TextBlock Grid.Row="2" Text="Hotkey backend" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RuntimeStatus.HotkeyBackend}" />
+                  <TextBlock Grid.Row="3" Text="Overlay backend" />
+                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RuntimeStatus.OverlayBackend}" />
+                  <TextBlock Grid.Row="4" Text="Inference provider" />
+                  <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RuntimeStatus.InferenceProvider}" />
+                  <TextBlock Grid.Row="5" Text="Model path" />
+                  <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RuntimeStatus.CurrentModelPath}" TextWrapping="Wrap" />
+                  <TextBlock Grid.Row="6" Text="FPS" />
+                  <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RuntimeStatus.Snapshot.Fps, StringFormat='{}{0:F1}'}" />
+                  <TextBlock Grid.Row="7" Text="Capture P95 (ms)" />
+                  <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding RuntimeStatus.Snapshot.CaptureP95Ms, StringFormat='{}{0:F2}'}" />
+                  <TextBlock Grid.Row="8" Text="Inference P95 (ms)" />
+                  <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding RuntimeStatus.Snapshot.InferenceP95Ms, StringFormat='{}{0:F2}'}" />
+                  <TextBlock Grid.Row="9" Text="Loop P95 (ms)" />
+                  <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding RuntimeStatus.Snapshot.LoopP95Ms, StringFormat='{}{0:F2}'}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <TabItem Header="Display" IsEnabled="{Binding DisplaySectionEnabled}">
         <ScrollViewer>
           <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
@@ -89,6 +136,46 @@
                 <TextBlock Grid.Row="5" Text="DPI Scale Y" VerticalAlignment="Center" />
                 <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DisplaySelection.DpiScaleY, Mode=TwoWay}" />
               </Grid>
+
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                <TextBlock Grid.Row="0" Text="Capture Method" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="0" Grid.Column="1"
+                          ItemsSource="{Binding DisplaySelection.CaptureMethodOptions}"
+                          SelectedItem="{Binding DisplaySelection.CaptureMethod, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="1" Text="Capture Backend Preference" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DisplaySelection.ExternalBackendPreference, Mode=TwoWay}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Model">
+        <ScrollViewer>
+          <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
+            <StackPanel Spacing="12">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Model Settings" />
+              <TextBlock Text="{Binding ModelSettings.MetadataMessage}" TextWrapping="Wrap" />
+
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                <TextBlock Grid.Row="0" Text="Model Path" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ModelSettings.ModelPath, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="1" Text="Confidence Threshold" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ModelSettings.ConfidenceThreshold, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="2" Text="Target Class" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="2" Grid.Column="1"
+                          ItemsSource="{Binding ModelSettings.TargetClassOptions}"
+                          SelectedItem="{Binding ModelSettings.TargetClass, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="3" Text="Image Size" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ModelSettings.ImageSize, Mode=TwoWay}" />
+              </Grid>
+
+              <TextBlock Text="{Binding ModelSettings.IsDynamicModel, StringFormat='Dynamic Model: {0}'}" />
+              <Button Width="180" HorizontalAlignment="Left" Content="Refresh Metadata" Click="OnRefreshModelMetadataClicked" />
             </StackPanel>
           </Border>
         </ScrollViewer>
@@ -122,13 +209,14 @@
                   <TextBlock Grid.Row="5" Text="Model Switch Keybind" VerticalAlignment="Center" />
                   <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding InputSettings.ModelSwitchKeybind, Mode=TwoWay}" />
                 </Grid>
+                <CheckBox Content="Enable Model Switch Keybind" IsChecked="{Binding InputSettings.EnableModelSwitchKeybind, Mode=TwoWay}" />
               </StackPanel>
             </Border>
 
             <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
               <StackPanel Spacing="12">
                 <TextBlock FontSize="16" FontWeight="SemiBold" Text="Runtime" />
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
                   <TextBlock Grid.Row="0" Text="FPS" VerticalAlignment="Center" />
                   <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeSettings.Fps, Mode=TwoWay}" />
 
@@ -152,6 +240,9 @@
                     <TextBox Width="140" Text="{Binding RuntimeSettings.DiagnosticsMaxInferenceP95Ms, Mode=TwoWay}" />
                     <TextBox Width="140" Text="{Binding RuntimeSettings.DiagnosticsMaxLoopP95Ms, Mode=TwoWay}" />
                   </StackPanel>
+
+                  <CheckBox Grid.Row="8" Grid.ColumnSpan="2" Content="UI TopMost" IsChecked="{Binding RuntimeSettings.UiTopMost, Mode=TwoWay}" />
+                  <CheckBox Grid.Row="9" Grid.ColumnSpan="2" Content="StreamGuard (Linux v1 unavailable)" IsChecked="{Binding RuntimeSettings.StreamGuardEnabled, Mode=TwoWay}" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -285,12 +376,124 @@
                 <CheckBox Content="Show Detected Player" IsChecked="{Binding OverlaySettings.ShowDetectedPlayer, Mode=TwoWay}" />
                 <CheckBox Content="Show Confidence" IsChecked="{Binding OverlaySettings.ShowConfidence, Mode=TwoWay}" />
                 <CheckBox Content="Show Tracers" IsChecked="{Binding OverlaySettings.ShowTracers, Mode=TwoWay}" />
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
                   <TextBlock Grid.Row="0" Text="Tracer Position" VerticalAlignment="Center" />
                   <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OverlaySettings.TracerPosition, Mode=TwoWay}" />
 
                   <TextBlock Grid.Row="1" Text="Opacity" VerticalAlignment="Center" />
                   <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OverlaySettings.Opacity, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Detected Player Color" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding OverlaySettings.DetectedPlayerColor, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="Confidence Font Size" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding OverlaySettings.ConfidenceFontSize, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="4" Text="Border Thickness" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding OverlaySettings.BorderThickness, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="5" Text="Corner Radius" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding OverlaySettings.CornerRadius, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Store + Update">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Margin="0,8,0,0">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" IsEnabled="{Binding StoreSectionEnabled}">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Model / Config Store" />
+                <TextBlock Text="{Binding StoreSectionNotice}" TextWrapping="Wrap" />
+                <CheckBox Content="Enable store integration" IsChecked="{Binding StoreUpdate.StoreEnabled, Mode=TwoWay}" />
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Models API URL" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding StoreUpdate.ModelsApiUrl, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="Configs API URL" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StoreUpdate.ConfigsApiUrl, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Local Models Dir" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding StoreUpdate.LocalModelsDirectory, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="Local Configs Dir" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding StoreUpdate.LocalConfigsDirectory, Mode=TwoWay}" />
+                </Grid>
+
+                <Button Width="160" HorizontalAlignment="Left" Content="Refresh Store" Click="OnStoreRefreshClicked" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <Border BorderBrush="#224f7f73" BorderThickness="1" CornerRadius="6" Padding="8">
+                    <StackPanel Spacing="8">
+                      <TextBlock FontWeight="SemiBold" Text="Models" />
+                      <ComboBox ItemsSource="{Binding StoreUpdate.ModelEntries}"
+                                SelectedItem="{Binding StoreUpdate.SelectedModelEntry, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Name}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+                      <Button Width="140" HorizontalAlignment="Left" Content="Download Model" Click="OnDownloadModelClicked" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" BorderBrush="#224f7f73" BorderThickness="1" CornerRadius="6" Padding="8">
+                    <StackPanel Spacing="8">
+                      <TextBlock FontWeight="SemiBold" Text="Configs" />
+                      <ComboBox ItemsSource="{Binding StoreUpdate.ConfigEntries}"
+                                SelectedItem="{Binding StoreUpdate.SelectedConfigEntry, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Name}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+                      <Button Width="140" HorizontalAlignment="Left" Content="Download Config" Click="OnDownloadConfigClicked" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" IsEnabled="{Binding UpdateSectionEnabled}">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Updater" />
+                <TextBlock Text="{Binding UpdateSectionNotice}" TextWrapping="Wrap" />
+                <CheckBox Content="Enable updater" IsChecked="{Binding StoreUpdate.UpdateEnabled, Mode=TwoWay}" />
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Current Version" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding StoreUpdate.CurrentVersion, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="Channel" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StoreUpdate.UpdateChannel, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Package Type" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding StoreUpdate.UpdatePackageType, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="Releases API URL" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding StoreUpdate.ReleasesApiUrl, Mode=TwoWay}" />
+                </Grid>
+
+                <Button Width="160" HorizontalAlignment="Left" Content="Check For Update" Click="OnCheckUpdateClicked" />
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Update Available" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StoreUpdate.UpdateAvailable}" />
+
+                  <TextBlock Grid.Row="1" Text="Latest Version" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding StoreUpdate.LatestVersion}" />
+
+                  <TextBlock Grid.Row="2" Text="Download URL" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StoreUpdate.UpdateDownloadUrl}" TextWrapping="Wrap" />
+
+                  <TextBlock Grid.Row="3" Text="Notes" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding StoreUpdate.UpdateNotes}" TextWrapping="Wrap" />
                 </Grid>
               </StackPanel>
             </Border>

@@ -49,6 +49,10 @@ public sealed class AimmyConfig
         Fov.Size = Math.Clamp(Fov.Size, 10, 2048);
         Fov.DynamicSize = Math.Clamp(Fov.DynamicSize, 10, 2048);
 
+        Overlay.ConfidenceFontSize = Math.Clamp(Overlay.ConfidenceFontSize, 8, 48);
+        Overlay.BorderThickness = Math.Clamp(Overlay.BorderThickness, 0.5, 10.0);
+        Overlay.CornerRadius = Math.Clamp(Overlay.CornerRadius, 0, 100);
+
         Runtime.Fps = Math.Clamp(Runtime.Fps, 1, 360);
         Runtime.DiagnosticsMinimumFps = Math.Clamp(Runtime.DiagnosticsMinimumFps, 1, 360);
         Runtime.DiagnosticsMaxCaptureP95Ms = Math.Clamp(Runtime.DiagnosticsMaxCaptureP95Ms, 1, 1000);
@@ -87,6 +91,7 @@ public sealed class InputSettings
     public string DynamicFovKeybind { get; set; } = "Left";
     public string EmergencyStopKeybind { get; set; } = "Delete";
     public string ModelSwitchKeybind { get; set; } = "Backslash";
+    public bool EnableModelSwitchKeybind { get; set; } = true;
 }
 
 public sealed class AimSettings
@@ -147,6 +152,10 @@ public sealed class OverlaySettings
     public bool ShowTracers { get; set; }
     public string TracerPosition { get; set; } = "Bottom";
     public double Opacity { get; set; } = 1.0;
+    public string DetectedPlayerColor { get; set; } = "#FF00FFFF";
+    public int ConfidenceFontSize { get; set; } = 20;
+    public double BorderThickness { get; set; } = 1.0;
+    public int CornerRadius { get; set; }
 }
 
 public sealed class RuntimeSettings
@@ -160,6 +169,8 @@ public sealed class RuntimeSettings
     public int DiagnosticsMaxCaptureP95Ms { get; set; } = 20;
     public int DiagnosticsMaxInferenceP95Ms { get; set; } = 25;
     public int DiagnosticsMaxLoopP95Ms { get; set; } = 35;
+    public bool UiTopMost { get; set; }
+    public bool StreamGuardEnabled { get; set; }
 }
 
 public sealed class DataCollectionSettings

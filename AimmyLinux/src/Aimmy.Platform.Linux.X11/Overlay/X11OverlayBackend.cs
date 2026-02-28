@@ -386,6 +386,13 @@ public sealed class X11OverlayBackend : IOverlayBackend
         script.AppendLine("    detections = state.get('Detections') or []");
         script.AppendLine("    show_conf = bool(state.get('ShowConfidence', False))");
         script.AppendLine("    show_tracers = bool(state.get('ShowTracers', False))");
+        script.AppendLine("    det_color = norm_color(state.get('DetectionColor'), '#00FF80')");
+        script.AppendLine("    font_size = int(state.get('ConfidenceFontSize', 10) or 10)");
+        script.AppendLine("    if font_size < 8:");
+        script.AppendLine("        font_size = 8");
+        script.AppendLine("    border_thickness = float(state.get('BorderThickness', 2.0) or 2.0)");
+        script.AppendLine("    if border_thickness < 0.5:");
+        script.AppendLine("        border_thickness = 0.5");
         script.AppendLine("    tracer_x, tracer_y = tracer_origin(state.get('TracerPosition'))");
         script.AppendLine();
         script.AppendLine("    for det in detections:");
@@ -396,17 +403,17 @@ public sealed class X11OverlayBackend : IOverlayBackend
         script.AppendLine("        conf = float(det.get('Confidence', 0.0))");
         script.AppendLine("        label = str(det.get('Label', 'Enemy'))");
         script.AppendLine();
-        script.AppendLine("        canvas.create_rectangle(x1, y1, x2, y2, outline='#00FF80', width=2)");
+        script.AppendLine("        canvas.create_rectangle(x1, y1, x2, y2, outline=det_color, width=border_thickness)");
         script.AppendLine("        if show_conf:");
         script.AppendLine("            text = f'{label} {conf:.2f}'");
         script.AppendLine("        else:");
         script.AppendLine("            text = label");
-        script.AppendLine("        canvas.create_text(x1 + 4, max(10, y1 - 10), text=text, anchor='w', fill='#00FF80', font=('Sans', 10, 'bold'))");
+        script.AppendLine("        canvas.create_text(x1 + 4, max(10, y1 - 10), text=text, anchor='w', fill=det_color, font=('Sans', font_size, 'bold'))");
         script.AppendLine();
         script.AppendLine("        if show_tracers:");
         script.AppendLine("            tx = (x1 + x2) / 2.0");
         script.AppendLine("            ty = (y1 + y2) / 2.0");
-        script.AppendLine("            canvas.create_line(tracer_x, tracer_y, tx, ty, fill='#00FF80', width=1)");
+        script.AppendLine("            canvas.create_line(tracer_x, tracer_y, tx, ty, fill=det_color, width=1)");
         script.AppendLine();
         script.AppendLine("last_mtime = None");
         script.AppendLine("def tick():");
@@ -573,6 +580,10 @@ public sealed class X11OverlayBackend : IOverlayBackend
         public bool ShowTracers { get; set; }
         public string TracerPosition { get; set; } = "bottom";
         public double Opacity { get; set; } = 1.0;
+        public string DetectionColor { get; set; } = "#00FF80";
+        public int ConfidenceFontSize { get; set; } = 10;
+        public double BorderThickness { get; set; } = 2.0;
+        public int CornerRadius { get; set; }
         public List<OverlayDetection> Detections { get; set; } = new();
 
         public static OverlayState CreateInitial(AimmyConfig config)
@@ -588,7 +599,11 @@ public sealed class X11OverlayBackend : IOverlayBackend
                 TracerPosition = string.IsNullOrWhiteSpace(config.Overlay.TracerPosition)
                     ? "bottom"
                     : config.Overlay.TracerPosition.Trim(),
-                Opacity = Math.Clamp(config.Overlay.Opacity, 0.15, 1.0)
+                Opacity = Math.Clamp(config.Overlay.Opacity, 0.15, 1.0),
+                DetectionColor = NormalizeColor(config.Overlay.DetectedPlayerColor),
+                ConfidenceFontSize = Math.Clamp(config.Overlay.ConfidenceFontSize, 8, 48),
+                BorderThickness = Math.Clamp(config.Overlay.BorderThickness, 0.5, 10.0),
+                CornerRadius = Math.Clamp(config.Overlay.CornerRadius, 0, 100)
             };
         }
     }

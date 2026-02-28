@@ -111,6 +111,16 @@ public sealed class LinuxRuntimeCapabilityProbe : IRuntimeCapabilityProbe
             caps.Set("Overlay", FeatureState.Unavailable, true, overlayReason);
         }
 
+        caps.Set(
+            "RuntimeUi",
+            FeatureState.Enabled,
+            false,
+            "Integrated runtime UI is available in Linux v1.");
+        caps.Set(
+            "StreamGuard",
+            FeatureState.Unavailable,
+            false,
+            "StreamGuard equivalent is intentionally unsupported on Linux v1.");
         caps.Set("WaylandAimAssist", FeatureState.Unavailable, false, "Wayland aim pipeline is intentionally unsupported in v1.");
 
         return caps;

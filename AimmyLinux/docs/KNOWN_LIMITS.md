@@ -5,5 +5,7 @@
 - Linux overlay backend uses a Python/tkinter renderer and may vary by distro desktop stack.
 - Global hotkey backend requires X11 and `libX11`; fallback backend is used when unavailable.
 - `uinput` path currently uses `ydotool` command integration.
+- StreamGuard-equivalent compositor/recording exclusion is intentionally unsupported in Linux v1.
+- Overlay corner-radius styling is config-exposed but renderer support is limited on tkinter backend.
 
 These limits are surfaced through runtime capability flags.

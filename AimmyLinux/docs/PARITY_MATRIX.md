@@ -16,6 +16,7 @@
 | JSON write config | Partial | Yes | Done |
 | Runtime capability flags | No | Yes | Done |
 | Runtime diagnostics (fps/latency) | Partial benchmark logs | Yes (p50/p95 snapshots) | Done |
+| Integrated runtime host service | No | Yes (`IRuntimeHostService` start/stop/apply/snapshot) | Done |
 
 ## Capture and Input
 | Area | Windows | Linux v1 | Status |
@@ -41,7 +42,7 @@
 | Movement path variants | Yes | Yes | Done |
 | Auto trigger (single click) | Yes | Yes | Done |
 | Spray mode | Yes | Yes | Done |
-| Cursor check | Yes | Crosshair-in-box trigger gating | Done |
+| Cursor check | Yes | Cursor-position trigger gating | Done |
 | Model switch keybind hot-swap | Yes | Runtime hot-swap with provider diagnostics | Done |
 | Data collection + auto-label | Yes | Yes | Done |
 
@@ -51,7 +52,7 @@
 | FOV overlay | Yes | Yes (X11 tkinter overlay) | Done |
 | ESP overlay | Yes | Yes (boxes/confidence/tracers) | Done |
 | Global hotkey capture UX | Yes | X11 global key/button grabs + poll fallback path | Done |
-| Full desktop GUI | WPF | Avalonia tabbed editor + capability badges + unavailable-section gating | In Progress |
+| Full desktop GUI | WPF | Avalonia live runtime shell + editor + capability badges + unavailable-section gating | In Progress |
 
 ## Store / Update / Packaging
 | Area | Windows | Linux v1 | Status |
@@ -65,3 +66,4 @@
 - Wayland active aim pipeline.
 - Windows vendor-specific input drivers (LG Hub, Razer, ddxoft).
 - DirectX/GDI capture methods.
+- StreamGuard equivalent behavior on Linux.

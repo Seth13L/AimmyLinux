@@ -1,0 +1,62 @@
+name: AimmyLinux Packages
+
+on:
+  push:
+    branches: ["main", "Aimmy-V2"]
+    paths:
+      - "AimmyLinux/**"
+      - ".github/workflows/aimmylinux-packages.yml"
+  pull_request:
+    paths:
+      - "AimmyLinux/**"
+      - ".github/workflows/aimmylinux-packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-packages:
+    name: Build DEB and RPM
+    runs-on: ubuntu-22.04
+    env:
+      AIMMY_VERSION: "0.1.0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            dpkg-dev \
+            rpm
+
+      - name: Build DEB package
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x AimmyLinux/packaging/deb/build-deb.sh
+          AimmyLinux/packaging/deb/build-deb.sh "$AIMMY_VERSION"
+
+      - name: Build RPM package
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x AimmyLinux/packaging/rpm/build-rpm.sh
+          AimmyLinux/packaging/rpm/build-rpm.sh "$AIMMY_VERSION"
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimmylinux-packages
+          path: |
+            AimmyLinux/artifacts/deb/*.deb
+            AimmyLinux/artifacts/rpmroot/RPMS/**/*.rpm
+          if-no-files-found: error

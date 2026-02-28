@@ -34,6 +34,8 @@ public sealed class RuntimeCapabilities
         capabilities.Set("InputBackend", FeatureState.Disabled, false, "Input backend not selected yet.");
         capabilities.Set("Hotkeys", FeatureState.Disabled, true, "Global hotkeys are running in fallback mode.");
         capabilities.Set("Overlay", FeatureState.Disabled, true, "X11 overlay backend not configured yet.");
+        capabilities.Set("RuntimeUi", FeatureState.Enabled, false, "Runtime UI host is available.");
+        capabilities.Set("StreamGuard", FeatureState.Unavailable, false, "StreamGuard equivalent is unsupported on Linux v1.");
         capabilities.Set("ModelStore", FeatureState.Enabled, false, "Model/config store client available.");
         capabilities.Set("Updater", FeatureState.Enabled, false, "Package-aware update client available.");
         return capabilities;

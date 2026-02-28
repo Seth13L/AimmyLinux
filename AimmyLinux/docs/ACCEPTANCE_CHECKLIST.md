@@ -1,20 +1,23 @@
 ﻿# Linux Acceptance Checklist
 
 ## Functional Gates
-- [ ] Loads typed `aimmylinux.json`.
-- [ ] Reads legacy `.cfg` and migrates settings in memory.
-- [ ] Loads ONNX model and runs detections.
-- [ ] Performs aim movement with selected input backend.
-- [ ] Supports prediction strategy selection (`Kalman`, `Shalloe`, `WiseTheFox`).
-- [ ] Supports auto trigger single-click and spray behaviors.
-- [ ] Supports data collection image capture with optional auto-label output.
-- [ ] Supports model/config store listing and download operations.
-- [ ] Supports package-aware update check.
+- [x] Loads typed `aimmylinux.json`.
+- [x] Reads legacy `.cfg` and migrates settings in memory.
+- [x] Loads ONNX model and runs detections.
+- [x] Performs aim movement with selected input backend.
+- [x] Supports prediction strategy selection (`Kalman`, `Shalloe`, `WiseTheFox`).
+- [x] Supports auto trigger single-click and spray behaviors.
+- [x] Supports data collection image capture with optional auto-label output.
+- [x] Supports model/config store listing and download operations.
+- [x] Supports package-aware update check.
+- [x] Supports integrated runtime shell controls (start/stop/apply + live snapshot feed).
+- [x] Supports cursor-position trigger check when `Cursor Check` is enabled.
 
 ## Capability Gates
-- [ ] Capability flags print at startup and reflect environment.
-- [ ] Unsupported features are marked unavailable/degraded instead of failing silently.
-- [ ] Wayland reports explicit unsupported status for v1 aim pipeline.
+- [x] Capability flags print at startup and reflect environment.
+- [x] Unsupported features are marked unavailable/degraded instead of failing silently.
+- [x] Wayland reports explicit unsupported status for v1 aim pipeline.
+- [x] StreamGuard is explicit as unsupported in Linux v1.
 
 ## Performance Gates
 - [ ] Capture latency p50/p95 is logged.

@@ -44,12 +44,15 @@ This commit establishes the migration baseline needed for phased feature parity.
 - Avalonia tabbed configuration editor expanded to cover input/runtime/aim/prediction/trigger/FOV/overlay/data sections.
 - Capability badges are now surfaced in Avalonia, and unsupported sections are explicitly disabled with messages.
 - Store and updater service scaffolds (GitHub API driven).
-- Deb/RPM packaging script scaffolds.
+- Store client hardening with retry/backoff and duplicate-safe downloads.
+- Package-aware updater hardening with channel-aware release selection and distro install guidance text.
+- Deb/RPM packaging scripts hardened with `/opt/aimmylinux` layout, `/usr/bin/aimmylinux` launcher, desktop entry, and post-install guidance.
+- CI package artifact workflow (`.github/workflows/aimmylinux-packages.yml`).
 - Parity and acceptance docs:
   - `docs/PARITY_MATRIX.md`
   - `docs/ACCEPTANCE_CHECKLIST.md`
 
 ## Still Pending for Full v1 Parity
 
-- Full Avalonia parity for remaining Windows menus and advanced flows (model store/update views, capability badges, runtime dashboard).
+- Full Avalonia parity for remaining Windows advanced flows (local model/config inventory management parity and remaining settings UX refinements).
 - End-to-end validation against Ubuntu/Fedora hardware matrix.

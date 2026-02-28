@@ -26,10 +26,13 @@ public sealed class AimmyRuntime
     private readonly RuntimeCapabilities _capabilities;
     private readonly ICaptureBackend _capture;
     private readonly Func<AimmyConfig, IInferenceBackend>? _inferenceFactory;
+    private readonly ICursorProvider _cursorProvider;
     private readonly IInputBackend _input;
     private readonly IHotkeyBackend _hotkeys;
     private readonly IOverlayBackend _overlay;
     private readonly ITargetPredictor _predictor;
+    private readonly Action<RuntimeSnapshot>? _snapshotCallback;
+    private readonly AimEmaSmoother _aimEmaSmoother = new();
     private readonly RuntimeDiagnostics _diagnostics = new();
     private readonly RuntimeAssertionThresholds _runtimeThresholds;
     private readonly CaptureGeometry _captureGeometry;
@@ -48,21 +51,25 @@ public sealed class AimmyRuntime
         RuntimeCapabilities capabilities,
         ICaptureBackend capture,
         IInferenceBackend inference,
+        ICursorProvider? cursorProvider,
         IInputBackend input,
         IHotkeyBackend hotkeys,
         IOverlayBackend overlay,
         ITargetPredictor predictor,
-        Func<AimmyConfig, IInferenceBackend>? inferenceFactory = null)
+        Func<AimmyConfig, IInferenceBackend>? inferenceFactory = null,
+        Action<RuntimeSnapshot>? snapshotCallback = null)
     {
         _config = config;
         _capabilities = capabilities;
         _capture = capture;
         _inference = inference;
         _inferenceFactory = inferenceFactory;
+        _cursorProvider = cursorProvider ?? new NoCursorProvider();
         _input = input;
         _hotkeys = hotkeys;
         _overlay = overlay;
         _predictor = predictor;
+        _snapshotCallback = snapshotCallback;
         _captureGeometry = CaptureGeometryResolver.Resolve(config.Capture);
         _dataCollector = new RuntimeDataCollector(config.DataCollection);
         _runtimeThresholds = new RuntimeAssertionThresholds(
@@ -141,7 +148,14 @@ public sealed class AimmyRuntime
 
             if (hotkeys.ModelSwitchEdge)
             {
-                await TrySwitchModelAsync(cancellationToken).ConfigureAwait(false);
+                if (_config.Input.EnableModelSwitchKeybind)
+                {
+                    await TrySwitchModelAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    Console.WriteLine("Model switch keybind pressed but disabled by configuration.");
+                }
             }
 
             try
@@ -178,6 +192,8 @@ public sealed class AimmyRuntime
                         Console.WriteLine($"Runtime warning: {warning}");
                     }
                 }
+
+                _snapshotCallback?.Invoke(snapshot);
             }
 
             var delay = frameInterval - loopStopwatch.Elapsed;
@@ -199,6 +215,11 @@ public sealed class AimmyRuntime
         captureStopwatch.Stop();
         _diagnostics.AddCaptureMs(captureStopwatch.Elapsed.TotalMilliseconds);
 
+        if (_config.Aim.ThirdPersonSupport)
+        {
+            ThirdPersonMaskApplier.Apply(frame);
+        }
+
         var inferenceStopwatch = Stopwatch.StartNew();
         var detections = _inference.Detect(frame, _config.Model.ConfidenceThreshold);
         inferenceStopwatch.Stop();
@@ -212,7 +233,8 @@ public sealed class AimmyRuntime
             await _overlay.ShowFovAsync(scaledFovSize, _config.Fov.Style, _config.Fov.Color, cancellationToken).ConfigureAwait(false);
         }
 
-        var targetPoint = TargetPointResolver.Resolve(frame.Width, frame.Height, _config);
+        var cursorFramePosition = ResolveCursorFramePosition(region, frame.Width, frame.Height);
+        var targetPoint = TargetPointResolver.Resolve(frame.Width, frame.Height, _config, cursorFramePosition);
         var candidate = TargetSelector.ClosestToTarget(
             detections,
             targetPoint.X,
@@ -239,13 +261,18 @@ public sealed class AimmyRuntime
             : selected.Value;
 
         var aimVector = AimVectorCalculator.Calculate(predicted, _config, frame.Width, frame.Height);
+        var (smoothedDx, smoothedDy) = _aimEmaSmoother.Apply(
+            aimVector.Dx,
+            aimVector.Dy,
+            _config.Prediction.EmaSmoothingEnabled,
+            _config.Prediction.EmaSmoothingAmount);
 
         if (ShouldMoveAim(hotkeys))
         {
-            await _input.MoveRelativeAsync(aimVector.Dx, aimVector.Dy, cancellationToken).ConfigureAwait(false);
+            await _input.MoveRelativeAsync(smoothedDx, smoothedDy, cancellationToken).ConfigureAwait(false);
         }
 
-        await HandleTriggerAsync(selected.Value, frame.Width, frame.Height, hotkeys, cancellationToken).ConfigureAwait(false);
+        await HandleTriggerAsync(selected.Value, hotkeys, cursorFramePosition, cancellationToken).ConfigureAwait(false);
 
         if (_config.Overlay.ShowDetectedPlayer)
         {
@@ -291,9 +318,8 @@ public sealed class AimmyRuntime
 
     private async Task HandleTriggerAsync(
         Detection detection,
-        int frameWidth,
-        int frameHeight,
         HotkeySnapshot hotkeys,
+        (float X, float Y)? cursorFramePosition,
         CancellationToken cancellationToken)
     {
         if (!_config.Trigger.Enabled)
@@ -313,10 +339,14 @@ public sealed class AimmyRuntime
             return;
         }
 
-        if (_config.Trigger.CursorCheck && !TriggerCursorCheck.IsCrosshairInside(detection, frameWidth, frameHeight))
+        if (_config.Trigger.CursorCheck)
         {
-            await _input.ReleaseLeftButtonAsync(cancellationToken).ConfigureAwait(false);
-            return;
+            if (!cursorFramePosition.HasValue ||
+                !TriggerCursorCheck.IsCursorInside(detection, cursorFramePosition.Value.X, cursorFramePosition.Value.Y))
+            {
+                await _input.ReleaseLeftButtonAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            }
         }
 
         if (_config.Trigger.SprayMode)
@@ -404,6 +434,7 @@ public sealed class AimmyRuntime
                 _activeModelIndex = nextIndex;
                 _stickyTarget = null;
                 _predictor.Reset();
+                _aimEmaSmoother.Reset();
                 await previousInference.DisposeAsync().ConfigureAwait(false);
 
                 Console.WriteLine(
@@ -527,6 +558,24 @@ public sealed class AimmyRuntime
         await _overlay.DisposeAsync().ConfigureAwait(false);
         await _hotkeys.DisposeAsync().ConfigureAwait(false);
         await _inference.DisposeAsync().ConfigureAwait(false);
+        if (_cursorProvider is IDisposable disposableCursor)
+        {
+            disposableCursor.Dispose();
+        }
+    }
+
+    private (float X, float Y)? ResolveCursorFramePosition(CaptureRegion region, int frameWidth, int frameHeight)
+    {
+        if (!_cursorProvider.TryGetPosition(out var screenX, out var screenY))
+        {
+            return null;
+        }
+
+        var maxX = Math.Max(0, frameWidth - 1);
+        var maxY = Math.Max(0, frameHeight - 1);
+        var frameX = Math.Clamp(screenX - region.X, 0, maxX);
+        var frameY = Math.Clamp(screenY - region.Y, 0, maxY);
+        return (frameX, frameY);
     }
 
     private readonly record struct HotkeySnapshot(
@@ -535,4 +584,14 @@ public sealed class AimmyRuntime
         bool DynamicFovPressed,
         bool EmergencyStopEdge,
         bool ModelSwitchEdge);
+
+    private sealed class NoCursorProvider : ICursorProvider
+    {
+        public bool TryGetPosition(out int screenX, out int screenY)
+        {
+            screenX = 0;
+            screenY = 0;
+            return false;
+        }
+    }
 }

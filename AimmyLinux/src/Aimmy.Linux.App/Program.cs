@@ -7,6 +7,7 @@ using Aimmy.Linux.App.Services.Runtime;
 using Aimmy.Platform.Abstractions.Interfaces;
 using Aimmy.Platform.Linux.X11.Capture;
 using Aimmy.Platform.Linux.X11.Config;
+using Aimmy.Platform.Linux.X11.Cursor;
 using Aimmy.Platform.Linux.X11.Display;
 using Aimmy.Platform.Linux.X11.Hotkeys;
 using Aimmy.Platform.Linux.X11.Input;
@@ -215,6 +216,13 @@ if (parsedArgs.ContainsKey("ui-config"))
     var uiEnvironmentVariableReader = new Func<string, string?>(Environment.GetEnvironmentVariable);
     var uiCapabilityProbe = new LinuxRuntimeCapabilityProbe(commandRunner, uiEnvironmentVariableReader);
     var uiCapabilities = uiCapabilityProbe.Probe();
+    var storeClient = new GitHubModelStoreClient(config.Store);
+    var updateService = new PackageAwareUpdateService(config.Update);
+    var runtimeHostService = new RuntimeHostService(commandRunner, uiEnvironmentVariableReader);
+    var modelMetadataReader = new OnnxModelMetadataReader();
+    var currentVersion = parsedArgs.TryGetValue("current-version", out var currentVersionArg)
+        ? currentVersionArg
+        : config.ConfigVersion;
 
     try
     {
@@ -224,6 +232,11 @@ if (parsedArgs.ContainsKey("ui-config"))
             uiCapabilities,
             configPath,
             updatedConfig => configService.Save(configPath, updatedConfig),
+            storeClient,
+            updateService,
+            runtimeHostService,
+            modelMetadataReader,
+            currentVersion,
             Array.Empty<string>());
     }
     catch (Exception ex)
@@ -246,6 +259,7 @@ var capabilities = capabilityProbe.Probe();
 
 var captureBackend = CaptureBackendFactory.Create(config, commandRunner, environmentVariableReader);
 var inputBackend = InputBackendFactory.Create(config, commandRunner);
+var cursorProvider = CursorProviderFactory.Create(environmentVariableReader);
 var hotkeyBackend = HotkeyBackendFactory.Create(config, environmentVariableReader);
 var overlayBackend = OverlayBackendFactory.Create(config, commandRunner, environmentVariableReader);
 var inferenceBackend = InferenceBackendFactory.Create(config);
@@ -263,6 +277,7 @@ var runtime = new AimmyRuntime(
     capabilities,
     captureBackend,
     inferenceBackend,
+    cursorProvider,
     inputBackend,
     hotkeyBackend,
     overlayBackend,
