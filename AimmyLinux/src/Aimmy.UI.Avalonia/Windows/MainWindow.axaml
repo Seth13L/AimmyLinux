@@ -17,76 +17,284 @@
       </StackPanel>
     </Border>
 
-    <ScrollViewer Grid.Row="1" Margin="0,8,0,8">
-      <StackPanel Margin="16" Spacing="16">
-        <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
-          <StackPanel Spacing="12">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Display Selection (X11)" />
-            <CheckBox x:Name="UseDiscoveredDisplayCheckBox"
-                      Content="Use discovered display geometry"
-                      IsChecked="{Binding DisplaySelection.UseDiscoveredDisplay, Mode=TwoWay}"
-                      Checked="OnDisplayModeChanged"
-                      Unchecked="OnDisplayModeChanged" />
+    <TabControl Grid.Row="1" Margin="16,8,16,8">
+      <TabItem Header="Display">
+        <ScrollViewer>
+          <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
+            <StackPanel Spacing="12">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Display Selection (X11)" />
+              <CheckBox x:Name="UseDiscoveredDisplayCheckBox"
+                        Content="Use discovered display geometry"
+                        IsChecked="{Binding DisplaySelection.UseDiscoveredDisplay, Mode=TwoWay}"
+                        Checked="OnDisplayModeChanged"
+                        Unchecked="OnDisplayModeChanged" />
 
-            <StackPanel Spacing="4">
-              <TextBlock Text="Discovered displays" />
-              <ComboBox x:Name="DiscoveredDisplayComboBox"
-                        ItemsSource="{Binding DisplaySelection.DisplayOptions}"
-                        SelectedValueBinding="{Binding Id}"
-                        SelectedValue="{Binding DisplaySelection.SelectedDisplayId, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Label}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Discovered displays" />
+                <ComboBox x:Name="DiscoveredDisplayComboBox"
+                          ItemsSource="{Binding DisplaySelection.DisplayOptions}"
+                          SelectedValueBinding="{Binding Id}"
+                          SelectedValue="{Binding DisplaySelection.SelectedDisplayId, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+
+              <Grid x:Name="ManualDisplayGrid"
+                    ColumnDefinitions="Auto,*"
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                    ColumnSpacing="12"
+                    RowSpacing="8">
+                <TextBlock Grid.Row="0" Text="Display Width" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DisplaySelection.DisplayWidth, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="1" Text="Display Height" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DisplaySelection.DisplayHeight, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="2" Text="Offset X" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding DisplaySelection.DisplayOffsetX, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="3" Text="Offset Y" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DisplaySelection.DisplayOffsetY, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="4" Text="DPI Scale X" VerticalAlignment="Center" />
+                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding DisplaySelection.DpiScaleX, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="5" Text="DPI Scale Y" VerticalAlignment="Center" />
+                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DisplaySelection.DpiScaleY, Mode=TwoWay}" />
+              </Grid>
             </StackPanel>
+          </Border>
+        </ScrollViewer>
+      </TabItem>
 
-            <Grid x:Name="ManualDisplayGrid"
-                  ColumnDefinitions="Auto,*"
-                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
-                  ColumnSpacing="12"
-                  RowSpacing="8">
-              <TextBlock Grid.Row="0" Text="Display Width" VerticalAlignment="Center" />
-              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DisplaySelection.DisplayWidth, Mode=TwoWay}" />
+      <TabItem Header="Input + Runtime">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Margin="0,8,0,0">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Input / Keybinds" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Preferred Method" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="0" Grid.Column="1"
+                            ItemsSource="{Binding InputSettings.PreferredMethodOptions}"
+                            SelectedItem="{Binding InputSettings.PreferredMethod, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="1" Text="Display Height" VerticalAlignment="Center" />
-              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DisplaySelection.DisplayHeight, Mode=TwoWay}" />
+                  <TextBlock Grid.Row="1" Text="Aim Keybind" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputSettings.AimKeybind, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="2" Text="Offset X" VerticalAlignment="Center" />
-              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding DisplaySelection.DisplayOffsetX, Mode=TwoWay}" />
+                  <TextBlock Grid.Row="2" Text="Secondary Aim Keybind" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputSettings.SecondaryAimKeybind, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="3" Text="Offset Y" VerticalAlignment="Center" />
-              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DisplaySelection.DisplayOffsetY, Mode=TwoWay}" />
+                  <TextBlock Grid.Row="3" Text="Dynamic FOV Keybind" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputSettings.DynamicFovKeybind, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="4" Text="DPI Scale X" VerticalAlignment="Center" />
-              <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding DisplaySelection.DpiScaleX, Mode=TwoWay}" />
+                  <TextBlock Grid.Row="4" Text="Emergency Stop Keybind" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding InputSettings.EmergencyStopKeybind, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="5" Text="DPI Scale Y" VerticalAlignment="Center" />
-              <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DisplaySelection.DpiScaleY, Mode=TwoWay}" />
-            </Grid>
+                  <TextBlock Grid.Row="5" Text="Model Switch Keybind" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding InputSettings.ModelSwitchKeybind, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Runtime" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="FPS" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeSettings.Fps, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="GPU Mode" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="1" Grid.Column="1"
+                            ItemsSource="{Binding RuntimeSettings.GpuModeOptions}"
+                            SelectedItem="{Binding RuntimeSettings.GpuMode, Mode=TwoWay}" />
+
+                  <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="Dry run" IsChecked="{Binding RuntimeSettings.DryRun, Mode=TwoWay}" />
+                  <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Content="Debug mode" IsChecked="{Binding RuntimeSettings.DebugMode, Mode=TwoWay}" />
+                  <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Enable diagnostics assertions" IsChecked="{Binding RuntimeSettings.EnableDiagnosticsAssertions, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="5" Text="Diagnostics Min FPS" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding RuntimeSettings.DiagnosticsMinimumFps, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="6" Text="Max Capture P95 (ms)" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding RuntimeSettings.DiagnosticsMaxCaptureP95Ms, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="7" Text="Max Inference/Loop P95 (ms)" VerticalAlignment="Center" />
+                  <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <TextBox Width="140" Text="{Binding RuntimeSettings.DiagnosticsMaxInferenceP95Ms, Mode=TwoWay}" />
+                    <TextBox Width="140" Text="{Binding RuntimeSettings.DiagnosticsMaxLoopP95Ms, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
           </StackPanel>
-        </Border>
+        </ScrollViewer>
+      </TabItem>
 
-        <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
-          <StackPanel Spacing="12">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Data Collection / Auto Label" />
-            <CheckBox Content="Collect data while playing"
-                      IsChecked="{Binding DataCollection.CollectDataWhilePlaying, Mode=TwoWay}" />
-            <CheckBox Content="Auto label captured data"
-                      IsChecked="{Binding DataCollection.AutoLabelData, Mode=TwoWay}" />
+      <TabItem Header="Aim + Prediction">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Margin="0,8,0,0">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Aim" />
+                <CheckBox Content="Enabled" IsChecked="{Binding AimSettings.Enabled, Mode=TwoWay}" />
+                <CheckBox Content="Constant Tracking" IsChecked="{Binding AimSettings.ConstantTracking, Mode=TwoWay}" />
+                <CheckBox Content="Sticky Aim Enabled" IsChecked="{Binding AimSettings.StickyAimEnabled, Mode=TwoWay}" />
+                <CheckBox Content="Dynamic FOV Enabled" IsChecked="{Binding AimSettings.DynamicFovEnabled, Mode=TwoWay}" />
+                <CheckBox Content="Third Person Support" IsChecked="{Binding AimSettings.ThirdPersonSupport, Mode=TwoWay}" />
 
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
-              <TextBlock Grid.Row="0" Text="Images Directory" VerticalAlignment="Center" />
-              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DataCollection.ImagesDirectory, Mode=TwoWay}" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Sticky Threshold" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AimSettings.StickyAimThreshold, Mode=TwoWay}" />
 
-              <TextBlock Grid.Row="1" Text="Labels Directory" VerticalAlignment="Center" />
-              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DataCollection.LabelsDirectory, Mode=TwoWay}" />
-            </Grid>
+                  <TextBlock Grid.Row="1" Text="Mouse Sensitivity" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AimSettings.MouseSensitivity, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Mouse Jitter" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AimSettings.MouseJitter, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="Max Delta Per Axis" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding AimSettings.MaxDeltaPerAxis, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="4" Text="Detection Area" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="4" Grid.Column="1"
+                            ItemsSource="{Binding AimSettings.DetectionAreaOptions}"
+                            SelectedItem="{Binding AimSettings.DetectionAreaType, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="5" Text="Aim Alignment" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="5" Grid.Column="1"
+                            ItemsSource="{Binding AimSettings.AlignmentOptions}"
+                            SelectedItem="{Binding AimSettings.AimingBoundariesAlignment, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="6" Text="Movement Path" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="6" Grid.Column="1"
+                            ItemsSource="{Binding AimSettings.MovementPathOptions}"
+                            SelectedItem="{Binding AimSettings.MovementPath, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="7" Text="X/Y Offset" VerticalAlignment="Center" />
+                  <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <TextBox Width="140" Text="{Binding AimSettings.XOffset, Mode=TwoWay}" />
+                    <TextBox Width="140" Text="{Binding AimSettings.YOffset, Mode=TwoWay}" />
+                  </StackPanel>
+
+                  <CheckBox Grid.Row="8" Grid.ColumnSpan="2" Content="X Axis Percentage Adjustment" IsChecked="{Binding AimSettings.XAxisPercentageAdjustment, Mode=TwoWay}" />
+                  <CheckBox Grid.Row="9" Grid.ColumnSpan="2" Content="Y Axis Percentage Adjustment" IsChecked="{Binding AimSettings.YAxisPercentageAdjustment, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Prediction" />
+                <CheckBox Content="Enabled" IsChecked="{Binding PredictionSettings.Enabled, Mode=TwoWay}" />
+                <CheckBox Content="EMA Smoothing Enabled" IsChecked="{Binding PredictionSettings.EmaSmoothingEnabled, Mode=TwoWay}" />
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Strategy" VerticalAlignment="Center" />
+                  <ComboBox Grid.Row="0" Grid.Column="1"
+                            ItemsSource="{Binding PredictionSettings.StrategyOptions}"
+                            SelectedItem="{Binding PredictionSettings.Strategy, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="EMA Amount" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PredictionSettings.EmaSmoothingAmount, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Kalman Lead Time" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PredictionSettings.KalmanLeadTime, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="WiseTheFox Lead Time" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding PredictionSettings.WiseTheFoxLeadTime, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="4" Text="Shalloe Lead Multiplier" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding PredictionSettings.ShalloeLeadMultiplier, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
           </StackPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Trigger + Overlay">
+        <ScrollViewer>
+          <StackPanel Spacing="16" Margin="0,8,0,0">
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Trigger" />
+                <CheckBox Content="Enabled" IsChecked="{Binding TriggerSettings.Enabled, Mode=TwoWay}" />
+                <CheckBox Content="Spray Mode" IsChecked="{Binding TriggerSettings.SprayMode, Mode=TwoWay}" />
+                <CheckBox Content="Cursor Check" IsChecked="{Binding TriggerSettings.CursorCheck, Mode=TwoWay}" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto" ColumnSpacing="12">
+                  <TextBlock Text="Auto Trigger Delay (s)" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding TriggerSettings.AutoTriggerDelaySeconds, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="FOV" />
+                <CheckBox Content="Enabled" IsChecked="{Binding FovSettings.Enabled, Mode=TwoWay}" />
+                <CheckBox Content="Show FOV" IsChecked="{Binding FovSettings.ShowFov, Mode=TwoWay}" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Size" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FovSettings.Size, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="Dynamic Size" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding FovSettings.DynamicSize, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="2" Text="Style" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding FovSettings.Style, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="3" Text="Color" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding FovSettings.Color, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Overlay" />
+                <CheckBox Content="Show Detected Player" IsChecked="{Binding OverlaySettings.ShowDetectedPlayer, Mode=TwoWay}" />
+                <CheckBox Content="Show Confidence" IsChecked="{Binding OverlaySettings.ShowConfidence, Mode=TwoWay}" />
+                <CheckBox Content="Show Tracers" IsChecked="{Binding OverlaySettings.ShowTracers, Mode=TwoWay}" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                  <TextBlock Grid.Row="0" Text="Tracer Position" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OverlaySettings.TracerPosition, Mode=TwoWay}" />
+
+                  <TextBlock Grid.Row="1" Text="Opacity" VerticalAlignment="Center" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OverlaySettings.Opacity, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Data">
+        <ScrollViewer>
+          <Border BorderBrush="#334f7f73" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
+            <StackPanel Spacing="12">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Data Collection / Auto Label" />
+              <CheckBox Content="Collect data while playing"
+                        IsChecked="{Binding DataCollection.CollectDataWhilePlaying, Mode=TwoWay}" />
+              <CheckBox Content="Auto label captured data"
+                        IsChecked="{Binding DataCollection.AutoLabelData, Mode=TwoWay}" />
+
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                <TextBlock Grid.Row="0" Text="Images Directory" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DataCollection.ImagesDirectory, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="1" Text="Labels Directory" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DataCollection.LabelsDirectory, Mode=TwoWay}" />
+              </Grid>
+            </StackPanel>
+          </Border>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
 
     <Border Grid.Row="2" Padding="12" BorderBrush="#334f7f73" BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">

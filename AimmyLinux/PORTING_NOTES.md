@@ -41,6 +41,7 @@ This commit establishes the migration baseline needed for phased feature parity.
 - Runtime emergency-stop keybind handling with deterministic shutdown input release.
 - Runtime model-switch keybind hot-swap path with backend/provider diagnostics and sticky-target reset.
 - Sticky aim transition logic for reacquire/switch/drop behavior.
+- Avalonia tabbed configuration editor expanded to cover input/runtime/aim/prediction/trigger/FOV/overlay/data sections.
 - Store and updater service scaffolds (GitHub API driven).
 - Deb/RPM packaging script scaffolds.
 - Parity and acceptance docs:
@@ -49,5 +50,5 @@ This commit establishes the migration baseline needed for phased feature parity.
 
 ## Still Pending for Full v1 Parity
 
-- Full Avalonia parity for all Windows menu sections (current UI covers display/data-collection editing).
+- Full Avalonia parity for remaining Windows menus and advanced flows (model store/update views, capability badges, runtime dashboard).
 - End-to-end validation against Ubuntu/Fedora hardware matrix.
